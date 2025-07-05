@@ -33,10 +33,10 @@ class BladderCLI:
         """Print banner"""
         banner = f"""
 {Fore.CYAN}╔════════════════════════════════════════════════════════════════╗
-║                    DR-Bladder-CLI                             ║
-║              Bladder Cancer EAU Guidelines AI Agent           ║
+║                         DR-Bladder-CLI                         ║
+║               Bladder Cancer EAU Guidelines AI Agent           ║
 ║                                                                ║
-║           Powered by Ollama + Qwen2.5 + RAG                   ║
+║                 Powered by Ollama + Qwen2.5 + RAG              ║
 ╚════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
 """
         print(banner)
