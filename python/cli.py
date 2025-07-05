@@ -119,7 +119,10 @@ class BladderCLI:
             
             if response and response.get('success'):
                 print(f"\n{Fore.GREEN}Answer:{Style.RESET_ALL}")
-                print(f"{response['answer']}")
+                
+                # 답변을 구조적으로 출력
+                answer_text = response['answer']
+                self._print_structured_answer(answer_text)
                 
                 # 간단한 참조 표시
                 if response.get('sources'):
@@ -166,7 +169,10 @@ class BladderCLI:
                 
                 if response and response.get('success'):
                     print(f"\n{Fore.GREEN}Answer:{Style.RESET_ALL}")
-                    print(f"{response['answer']}")
+                    
+                    # 답변을 구조적으로 출력
+                    answer_text = response['answer']
+                    self._print_structured_answer(answer_text)
                     
                     # 간단한 참조 표시
                     if response.get('sources'):
@@ -235,6 +241,27 @@ class BladderCLI:
             
         except Exception as e:
             print(f"{Fore.RED}Error checking status: {str(e)}{Style.RESET_ALL}")
+
+    def _print_structured_answer(self, answer_text: str):
+        """답변을 구조적으로 출력"""
+        import re
+        
+        # 문장 단위로 분리
+        sentences = re.split(r'(?<=[.!?])\s+', answer_text)
+        
+        # 각 문장을 출력
+        for i, sentence in enumerate(sentences):
+            if sentence.strip():
+                # 리스트 항목 처리
+                if sentence.strip().startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.')):
+                    print(f"  {sentence.strip()}")
+                # 일반 문장 처리
+                else:
+                    print(f"{sentence.strip()}")
+                    
+                # 문장 사이에 약간의 공백 추가 (마지막 문장 제외)
+                if i < len(sentences) - 1:
+                    print()
 
     def edit_config(self):
         """설정 파일 편집"""
