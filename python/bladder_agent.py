@@ -484,7 +484,7 @@ class BladderCancerAgent:
             return {
                 "success": True,
                 "answer": answer,
-                "sources": [self._safe_encode_text(doc["document"]) for doc in relevant_docs],
+                "sources": [self._create_source_summary(doc, i+1) for i, doc in enumerate(relevant_docs)],
                 "context": context
             }
             
@@ -565,6 +565,23 @@ class BladderCancerAgent:
         
         return "\n".join(context_parts)
 
+    def _create_source_summary(self, doc: Dict[str, Any], index: int) -> str:
+        """간결한 참고문헌 요약 생성"""
+        text = doc['document']
+        
+        # 첫 번째 문장 또는 첫 100자 가져오기
+        sentences = text.split('.')
+        if len(sentences) > 0 and len(sentences[0]) > 20:
+            summary = sentences[0][:100] + "..." if len(sentences[0]) > 100 else sentences[0]
+        else:
+            summary = text[:100] + "..." if len(text) > 100 else text
+        
+        # 요약 정리
+        summary = summary.strip().replace('\n', ' ').replace('\r', ' ')
+        summary = ' '.join(summary.split())  # 여분의 공백 제거
+        
+        return f"[참고 {index}] {summary}"
+
     def _generate_answer(self, question: str, context: str) -> str:
         """AI 답변 생성"""
         try:
@@ -597,25 +614,20 @@ class BladderCancerAgent:
 
     def _create_prompt(self, question: str, context: str) -> str:
         """프롬프트 생성"""
-        prompt = f"""당신은 방광암 치료 전문가입니다. EAU(European Association of Urology) 가이드라인을 기반으로 정확하고 신뢰할 수 있는 의료 정보를 제공합니다.
+        prompt = f"""당신은 EAU(European Association of Urology) 방광암 가이드라인만을 기반으로 답변하는 의료 AI입니다.
 
-아래 제공된 의료 문서를 참고하여 질문에 답변해주세요.
+중요한 지침:
+- 아래 제공된 가이드라인 문서에 명시된 내용만으로 답변하세요
+- 문서에 정보가 없으면 "제공된 가이드라인에서 해당 정보를 찾을 수 없습니다" 또는 "모르겠습니다"라고 답변하세요
+- 외부 지식이나 추측으로 답변하지 마세요
+- 문서에 없는 일반적인 의학 조언을 제공하지 마세요
 
-【참고 문서】
+제공된 EAU 가이드라인:
 {context}
 
-【질문】
-{question}
+질문: {question}
 
-【답변 지침】
-1. 제공된 문서의 내용만을 바탕으로 답변하세요.
-2. 의학적으로 정확하고 신뢰할 수 있는 정보만 제공하세요.
-3. 불확실한 내용은 "가이드라인에 명시되지 않았습니다"라고 답변하세요.
-4. 구체적인 치료법이나 약물 정보는 전문의와 상담하도록 안내하세요.
-5. 한국어로 친절하고 이해하기 쉽게 답변하세요.
-
-【답변】
-"""
+위 가이드라인 문서에만 기반한 답변:"""
         return prompt
 
     def get_status(self) -> Dict[str, Any]:

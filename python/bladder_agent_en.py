@@ -476,7 +476,7 @@ class BladderCancerAgent:
             return {
                 "success": True,
                 "answer": answer,
-                "sources": [doc["document"] for doc in relevant_docs],
+                "sources": [self._create_source_summary(doc, i+1) for i, doc in enumerate(relevant_docs)],
                 "context": context
             }
             
@@ -530,6 +530,23 @@ class BladderCancerAgent:
         
         return "\\n".join(context_parts)
 
+    def _create_source_summary(self, doc: Dict[str, Any], index: int) -> str:
+        """Create concise source summary"""
+        text = doc['document']
+        
+        # Get first sentence or first 100 characters
+        sentences = text.split('.')
+        if len(sentences) > 0 and len(sentences[0]) > 20:
+            summary = sentences[0][:100] + "..." if len(sentences[0]) > 100 else sentences[0]
+        else:
+            summary = text[:100] + "..." if len(text) > 100 else text
+        
+        # Clean up summary
+        summary = summary.strip().replace('\\n', ' ').replace('\\r', ' ')
+        summary = ' '.join(summary.split())  # Remove extra spaces
+        
+        return f"[Ref {index}] {summary}"
+
     def _generate_answer(self, question: str, context: str) -> str:
         """Generate AI answer"""
         try:
@@ -559,16 +576,21 @@ class BladderCancerAgent:
 
     def _create_prompt(self, question: str, context: str) -> str:
         """Create prompt for AI model"""
-        prompt = f"""You are a medical AI assistant specializing in bladder cancer based on EAU (European Association of Urology) guidelines.
+        prompt = f"""You are a medical AI assistant that ONLY answers questions based on the provided EAU (European Association of Urology) bladder cancer guidelines context below.
+
+IMPORTANT INSTRUCTIONS:
+- ONLY use information that is explicitly mentioned in the context below
+- If the information is NOT available in the provided context, respond with "I don't know" or "The information is not available in the provided guidelines"
+- Do NOT use any external knowledge or make assumptions
+- Do NOT provide general medical advice beyond what's in the context
+- Answer in the same language as the question
 
 Context from EAU Guidelines:
 {context}
 
 Question: {question}
 
-Please provide a comprehensive answer based on the provided EAU guidelines context. If the information is not available in the context, clearly state that. Answer in the same language as the question was asked.
-
-Answer:"""
+Answer based ONLY on the above context:"""
         
         return prompt
 
