@@ -456,8 +456,12 @@ class BladderCancerAgent:
             if not self.is_initialized:
                 return {"success": False, "error": "에이전트가 초기화되지 않았습니다"}
             
+            # 0. 질문 인코딩 안전 처리
+            question = self._safe_encode_text(question)
+            
             # 1. 한국어 질문 확장
             expanded_query = self._expand_korean_query(question)
+            expanded_query = self._safe_encode_text(expanded_query)
             
             # 2. 관련 문서 검색
             relevant_docs = self._search_relevant_documents(expanded_query)
@@ -467,9 +471,11 @@ class BladderCancerAgent:
             
             # 3. 컨텍스트 생성
             context = self._create_context(relevant_docs)
+            context = self._safe_encode_text(context)
             
             # 4. AI 답변 생성
             answer = self._generate_answer(question, context)
+            answer = self._safe_encode_text(answer) if answer else ""
             
             if not answer:
                 return {"success": False, "error": "답변 생성 실패"}
@@ -478,13 +484,40 @@ class BladderCancerAgent:
             return {
                 "success": True,
                 "answer": answer,
-                "sources": [doc["document"] for doc in relevant_docs],
+                "sources": [self._safe_encode_text(doc["document"]) for doc in relevant_docs],
                 "context": context
             }
             
         except Exception as e:
             self.logger.error(f"질문 처리 실패: {str(e)}")
             return {"success": False, "error": str(e)}
+
+    def _safe_encode_text(self, text: str) -> str:
+        """텍스트 안전 인코딩 처리"""
+        if not text:
+            return ""
+        
+        try:
+            # 이미 문자열인 경우
+            if isinstance(text, str):
+                # UTF-8로 안전하게 인코딩/디코딩
+                return text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+            
+            # 바이트인 경우
+            elif isinstance(text, bytes):
+                return text.decode('utf-8', errors='ignore')
+            
+            # 기타 타입인 경우
+            else:
+                return str(text).encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+                
+        except Exception as e:
+            self.logger.warning(f"텍스트 인코딩 처리 중 오류: {e}")
+            # 최후의 수단: ASCII만 유지
+            try:
+                return str(text).encode('ascii', errors='ignore').decode('ascii')
+            except:
+                return ""
 
     def _expand_korean_query(self, query: str) -> str:
         """한국어 질문을 영어로 확장"""
