@@ -106,19 +106,40 @@ class BladderCancerAgent:
         """인코딩 설정"""
         try:
             import locale
+            import sys
+            
             # 로케일 설정
             if os.name == 'nt':  # Windows
-                locale.setlocale(locale.LC_ALL, 'Korean_Korea.utf8')
+                try:
+                    locale.setlocale(locale.LC_ALL, 'Korean_Korea.utf8')
+                except:
+                    try:
+                        locale.setlocale(locale.LC_ALL, 'ko_KR.utf8')
+                    except:
+                        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
             else:  # Linux/macOS
-                locale.setlocale(locale.LC_ALL, 'ko_KR.utf8')
-        except:
-            try:
-                locale.setlocale(locale.LC_ALL, 'en_US.utf8')
-            except:
-                pass
+                try:
+                    locale.setlocale(locale.LC_ALL, 'ko_KR.utf8')
+                except:
+                    try:
+                        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+                    except:
+                        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        except Exception as e:
+            self.logger.warning(f"로케일 설정 실패: {e}")
         
         # 환경 변수 설정
         os.environ['PYTHONIOENCODING'] = 'utf-8'
+        os.environ['LANG'] = 'en_US.UTF-8'
+        os.environ['LC_ALL'] = 'en_US.UTF-8'
+        
+        # Python 스트림 인코딩 설정
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
+        if hasattr(sys.stdin, 'reconfigure'):
+            sys.stdin.reconfigure(encoding='utf-8')
 
     def initialize(self) -> bool:
         """
@@ -207,32 +228,53 @@ class BladderCancerAgent:
     def _download_model(self) -> bool:
         """Ollama 모델 다운로드"""
         try:
-            print(f"🔄 모델 '{self.config.model_name}' 다운로드 중... (약 400MB)")
+            print(f"모델 '{self.config.model_name}' 다운로드 중... (약 1GB)")
             print("이 작업은 몇 분 정도 소요될 수 있습니다.")
             
-            # Ollama pull 명령 실행
+            # Ollama pull 명령 실행 (실시간 출력으로 진행상황 표시)
             import subprocess
             import sys
             
-            result = subprocess.run(
-                ['ollama', 'pull', self.config.model_name], 
-                capture_output=True, 
+            # 실시간 출력을 위한 Popen 사용
+            process = subprocess.Popen(
+                ['ollama', 'pull', self.config.model_name],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
-                timeout=1800  # 30분 타임아웃
+                bufsize=1,
+                universal_newlines=True
             )
             
-            if result.returncode == 0:
-                print(f"✅ 모델 '{self.config.model_name}' 다운로드 완료")
+            # 실시간 출력 및 진행상황 표시
+            with tqdm(desc="다운로드 진행", unit="B", unit_scale=True) as pbar:
+                for line in iter(process.stdout.readline, ''):
+                    line = line.strip()
+                    if line:
+                        # 다운로드 진행률 파싱
+                        if 'pulling' in line.lower() or 'downloading' in line.lower():
+                            pbar.set_description(f"다운로드 중: {line[:50]}...")
+                            pbar.update(1)
+                        elif 'verifying' in line.lower():
+                            pbar.set_description("검증 중...")
+                        elif 'success' in line.lower():
+                            pbar.set_description("완료")
+                            pbar.update(100)
+                        print(f"  {line}")
+            
+            process.wait()
+            
+            if process.returncode == 0:
+                print(f"모델 '{self.config.model_name}' 다운로드 완료")
                 return True
             else:
-                print(f"❌ 모델 다운로드 실패: {result.stderr}")
+                print(f"모델 다운로드 실패 (종료 코드: {process.returncode})")
                 return False
                 
         except subprocess.TimeoutExpired:
-            print("❌ 모델 다운로드 시간 초과")
+            print("모델 다운로드 시간 초과")
             return False
         except Exception as e:
-            print(f"❌ 모델 다운로드 중 오류: {str(e)}")
+            print(f"모델 다운로드 중 오류: {str(e)}")
             return False
 
     def _init_embedding_model(self) -> bool:
@@ -500,22 +542,35 @@ class BladderCancerAgent:
         try:
             # 이미 문자열인 경우
             if isinstance(text, str):
-                # UTF-8로 안전하게 인코딩/디코딩
-                return text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+                # 유니코드 정규화 및 안전한 UTF-8 처리
+                import unicodedata
+                text = unicodedata.normalize('NFC', text)
+                # 안전한 문자만 유지
+                safe_text = ''.join(c for c in text if unicodedata.category(c) not in ['Cc', 'Cf', 'Cs', 'Co', 'Cn'])
+                return safe_text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
             
             # 바이트인 경우
             elif isinstance(text, bytes):
+                # 여러 인코딩 방식을 시도
+                for encoding in ['utf-8', 'cp949', 'euc-kr', 'iso-8859-1']:
+                    try:
+                        decoded = text.decode(encoding)
+                        return self._safe_encode_text(decoded)
+                    except UnicodeDecodeError:
+                        continue
+                # 모든 인코딩 실패 시 에러 무시
                 return text.decode('utf-8', errors='ignore')
             
             # 기타 타입인 경우
             else:
-                return str(text).encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+                return self._safe_encode_text(str(text))
                 
         except Exception as e:
             self.logger.warning(f"텍스트 인코딩 처리 중 오류: {e}")
-            # 최후의 수단: ASCII만 유지
+            # 최후의 수단: 안전한 문자만 유지
             try:
-                return str(text).encode('ascii', errors='ignore').decode('ascii')
+                safe_chars = ''.join(c for c in str(text) if ord(c) < 128 or c.isalnum() or c in ' .,!?-')
+                return safe_chars
             except:
                 return ""
 
@@ -604,30 +659,32 @@ class BladderCancerAgent:
             answer = response.get('response', '').strip()
             
             if not answer:
-                return "죄송합니다. 답변을 생성할 수 없습니다."
+                return "I'm sorry, I cannot generate an answer based on the available information."
             
             return answer
             
         except Exception as e:
             self.logger.error(f"답변 생성 실패: {str(e)}")
-            return f"답변 생성 중 오류가 발생했습니다: {str(e)}"
+            return f"An error occurred while generating the answer: {str(e)}"
 
     def _create_prompt(self, question: str, context: str) -> str:
         """프롬프트 생성"""
-        prompt = f"""당신은 EAU(European Association of Urology) 방광암 가이드라인만을 기반으로 답변하는 의료 AI입니다.
+        prompt = f"""You are a medical AI that answers questions based solely on EAU (European Association of Urology) bladder cancer guidelines.
 
-중요한 지침:
-- 아래 제공된 가이드라인 문서에 명시된 내용만으로 답변하세요
-- 문서에 정보가 없으면 "제공된 가이드라인에서 해당 정보를 찾을 수 없습니다" 또는 "모르겠습니다"라고 답변하세요
-- 외부 지식이나 추측으로 답변하지 마세요
-- 문서에 없는 일반적인 의학 조언을 제공하지 마세요
+IMPORTANT INSTRUCTIONS:
+- Answer ONLY based on the content explicitly stated in the guideline documents provided below
+- If information is not found in the documents, respond with "The requested information is not available in the provided guidelines" or "I don't know"
+- Do not answer based on external knowledge or speculation
+- Do not provide general medical advice not found in the documents
+- ALWAYS respond in English, regardless of the language of the question
+- Be precise and cite specific sections when possible
 
-제공된 EAU 가이드라인:
+EAU Guidelines Context:
 {context}
 
-질문: {question}
+Question: {question}
 
-위 가이드라인 문서에만 기반한 답변:"""
+Answer based solely on the above guideline documents (respond in English):"""
         return prompt
 
     def get_status(self) -> Dict[str, Any]:

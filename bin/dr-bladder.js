@@ -7,7 +7,7 @@ const os = require('os');
 
 // Python 스크립트 경로
 const pythonDir = path.join(__dirname, '..', 'python');
-const cliScript = path.join(pythonDir, 'cli_en.py');
+const cliScript = path.join(pythonDir, 'cli.py');
 
 // Python 실행 파일 찾기
 function findPython() {

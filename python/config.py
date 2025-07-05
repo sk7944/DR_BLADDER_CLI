@@ -41,7 +41,7 @@ class Config:
         """기본 설정값 로드"""
         # Ollama 설정
         self.ollama_host = "http://localhost:11434"
-        self.model_name = "qwen2.5:0.5b"
+        self.model_name = "qwen2.5:1.5b"
         
         # 임베딩 모델 설정
         self.embedding_model = "paraphrase-multilingual-MiniLM-L12-v2"

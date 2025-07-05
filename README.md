@@ -1,256 +1,256 @@
-# 🏥 DR-Bladder-CLI - 방광암 EAU 가이드라인 AI Agent
+# DR-Bladder-CLI - Bladder Cancer EAU Guidelines AI Agent
 
-이 프로젝트는 방광암 EAU(유럽 비뇨기과 학회) 가이드라인을 기반으로 하는 독립 CLI AI Agent입니다. Ollama + Qwen2.5 모델을 활용하여 사용자가 방광암에 대해 자연어(한국어/영어)로 질문하면, 최신 가이드라인 PDF 문서에서 관련 정보를 찾아 AI가 생성한 답변을 제공합니다.
+This project is an independent CLI AI Agent based on bladder cancer EAU (European Association of Urology) guidelines. It utilizes Ollama + Qwen2.5-1.5B model to provide AI-generated answers by searching relevant information from the latest guideline PDF documents when users ask questions about bladder cancer in natural language. All responses are provided in English regardless of the input language.
 
-## 🚀 주요 기능
+## Key Features
 
-- **🤖 AI 기반 답변 생성**: Ollama + Qwen2.5 모델을 통한 지능적인 답변 생성
-- **📚 최신 의학 정보**: 2025년 EAU 방광암 가이드라인 PDF에서 직접 정보를 검색
-- **🗣️ 자연어 질문 답변**: "BCG 치료의 부작용은 무엇인가요?"와 같은 자연스러운 질문 처리
-- **🌍 다국어 지원**: 한국어 질문을 영문 가이드라인에서 검색 가능
-- **⚡ GPU 가속 지원**: NVIDIA GPU가 있는 경우 자동으로 GPU 활용
-- **💬 대화형 모드**: 연속적인 질문과 답변이 가능한 채팅 인터페이스
-- **🔧 간편한 설치**: 원클릭 설치 시스템으로 복잡한 설정 없이 바로 사용
+- **AI-powered Answer Generation**: Intelligent answer generation through Ollama + Qwen2.5-1.5B model
+- **Latest Medical Information**: Direct information retrieval from 2025 EAU Bladder Cancer Guidelines PDF
+- **Natural Language Q&A**: Handles natural questions like "What are the side effects of BCG treatment?"
+- **Multi-language Input**: Accepts questions in Korean or English, but always responds in English
+- **GPU Acceleration**: Automatically utilizes NVIDIA GPU when available
+- **Interactive Mode**: Chat interface enabling continuous questions and answers
+- **Easy Installation**: One-click installation system with progress tracking for immediate use without complex setup
 
-## 📋 시스템 요구사항
+## System Requirements
 
-- **운영체제**: Windows, macOS, Linux
-- **Node.js**: 14.0 이상
-- **Python**: 3.8 이상  
-- **메모리**: 4GB 이상 권장
-- **디스크**: 2GB 이상 여유 공간
-- **Ollama**: AI 모델 실행을 위해 필요
-- **GPU (선택 사항)**:
-  - NVIDIA GPU (CUDA 지원)
-  - VRAM 4GB 이상 권장
+- **Operating System**: Windows, macOS, Linux
+- **Node.js**: 14.0 or higher
+- **Python**: 3.8 or higher  
+- **Memory**: 4GB or more recommended
+- **Disk Space**: 3GB or more free space (for Qwen2.5-1.5B model)
+- **Ollama**: Required for AI model execution
+- **GPU (Optional)**:
+  - NVIDIA GPU (CUDA support)
+  - 4GB VRAM or more recommended
 
-## 🚀 빠른 설치
+## Quick Installation
 
-### 1단계: 저장소 클론
+### Step 1: Clone Repository
 ```bash
 git clone https://github.com/sk7944/DR_BLADDER_CLI.git
 cd DR_BLADDER_CLI
 ```
 
-### 2단계: 자동 설치
+### Step 2: Automatic Installation
 ```bash
-npm install  # Node.js 의존성 및 Python 패키지 자동 설치
+npm install  # Automatically installs Node.js dependencies and Python packages
 ```
 
-### 3단계: Ollama 설치
+### Step 3: Install Ollama
 ```bash
 # Linux/macOS
 curl -fsSL https://ollama.ai/install.sh | sh
 
 # Windows
-# https://ollama.ai/download 에서 설치 파일 다운로드
+# Download installer from https://ollama.ai/download
 ```
 
-### 4단계: 전역 설치 (선택사항)
+### Step 4: Global Installation (Optional)
 ```bash
-# 방법 1: 전역 설치 (dr-bladder 명령어 직접 사용)
+# Method 1: Global installation (use dr-bladder command directly)
 npm install -g .
 
-# 방법 2: npx 사용 (전역 설치 없이)
-# npx dr-bladder 명령어로 사용
+# Method 2: Use npx (without global installation)
+# Use with npx dr-bladder command
 ```
 
-### 5단계: 초기화
+### Step 5: Initialize
 ```bash
-# 전역 설치한 경우
+# If globally installed
 dr-bladder init
 
-# npx 사용하는 경우  
+# If using npx
 npx dr-bladder init
 ```
 
-## 💬 사용 방법
+## Usage
 
-### CLI 명령어
+### CLI Commands
 
 ```bash
-# 단일 질문
-dr-bladder query "BCG 치료의 부작용은 무엇인가요?"
+# Single question
+dr-bladder query "What are the side effects of BCG treatment?"
 
-# 대화형 모드 (권장)
+# Interactive mode (recommended)
 dr-bladder chat
 
-# 시스템 상태 확인
+# Check system status
 dr-bladder status
 
-# 설정 편집
+# Edit configuration
 dr-bladder config
 
-# 도움말
+# Help
 dr-bladder --help
 ```
 
-### 예시 질문들
+### Example Questions
 
-**한국어:**
-- "BCG 치료의 부작용은 무엇인가요?"
-- "방광암의 재발 위험 요인에 대해 알려주세요"
-- "TURBT 수술 후 관리 방법은?"
-- "방광암 병기 분류에 대해 설명해주세요"
+**Input Examples (Korean - responds in English):**
+- "BCG 치료의 부작용은 무엇인가요?" → English response about BCG side effects
+- "방광암의 재발 위험 요인에 대해 알려주세요" → English response about recurrence risk factors
+- "TURBT 수술 후 관리 방법은?" → English response about post-TURBT management
+- "방광암 병기 분류에 대해 설명해주세요" → English response about staging classification
 
-**English:**
+**Input Examples (English):**
 - "What are the indications for BCG therapy?"
 - "How is NMIBC risk stratification performed?"
 - "What are the surveillance protocols for bladder cancer?"
 
-### 대화형 모드 사용법
+### Interactive Mode Usage
 
 ```bash
 $ dr-bladder chat
 
-🏥 DR-Bladder-CLI - 방광암 EAU 가이드라인 AI Agent
-💬 대화형 모드 시작 (종료: 'quit', 'exit', 'q')
+DR-Bladder-CLI - Bladder Cancer EAU Guidelines AI Agent
+Interactive mode started (Exit: 'quit', 'exit', 'q')
 
-🤔 질문: BCG 치료의 부작용은?
-🔍 답변 생성 중...
+Question: What are the side effects of BCG?
+Generating answer...
 
-🏥 답변:
-BCG 치료의 주요 부작용은 다음과 같습니다:
-1. 국소 부작용: 배뇨 시 작열감, 빈뇨, 혈뇨
-2. 전신 부작용: 발열, 피로감, 독감 유사 증상
-3. 심각한 부작용: BCG균혈증 (드물지만 주의 필요)
+Answer:
+The main side effects of BCG therapy include:
+1. Local side effects: Burning sensation during urination, frequent urination, hematuria
+2. Systemic side effects: Fever, fatigue, flu-like symptoms
+3. Serious side effects: BCG sepsis (rare but requires attention)
 ...
 
-🤔 질문: 
+Question: 
 ```
 
-## 📁 프로젝트 구조
+## Project Structure
 
 ```
 DR_BLADDER_CLI/
 ├── bin/
-│   └── dr-bladder.js          # CLI 진입점
+│   └── dr-bladder.js          # CLI entry point
 ├── python/
-│   ├── cli.py                 # Python CLI 메인
-│   ├── bladder_agent.py       # 핵심 AI 에이전트
-│   ├── config.py              # 설정 관리
-│   ├── utils.py               # 유틸리티 함수들
-│   ├── requirements.txt       # Python 의존성
-│   └── files/                 # PDF 파일 저장소
+│   ├── cli.py                 # Python CLI main
+│   ├── bladder_agent.py       # Core AI agent
+│   ├── config.py              # Configuration management
+│   ├── utils.py               # Utility functions
+│   ├── requirements.txt       # Python dependencies
+│   └── files/                 # PDF file storage
 │       └── EAU-Guidelines-*.pdf
 ├── src/
-│   ├── install.js             # 자동 설치 시스템
-│   ├── init.js                # 시스템 초기화
-│   └── test.js                # 종합 테스트 시스템
+│   ├── install.js             # Automatic installation system
+│   ├── init.js                # System initialization
+│   └── test.js                # Comprehensive test system
 ├── files/
-│   └── EAU-Guidelines-*.pdf   # 원본 PDF 파일
-├── env/                       # Python 가상환경 (conda)
-├── package.json               # Node.js 설정
+│   └── EAU-Guidelines-*.pdf   # Original PDF files
+├── env/                       # Python virtual environment (conda)
+├── package.json               # Node.js configuration
 └── README.md
 ```
 
-## 🔧 핵심 구성 요소
+## Core Components
 
-| 파일 | 설명 |
+| File | Description |
 |---|---|
-| `bin/dr-bladder.js` | **CLI 진입점** - 모든 명령어의 시작점 |
-| `python/cli.py` | **Python CLI 메인** - 실제 AI 기능을 담당 |
-| `python/bladder_agent.py` | **AI 에이전트 핵심** - RAG + Ollama 통합 |
-| `python/config.py` | **설정 관리** - 모든 설정을 관리 |
-| `python/utils.py` | **유틸리티** - 시스템 검사, 로깅 등 |
-| `src/install.js` | **자동 설치** - npm install 시 자동 실행 |
-| `src/init.js` | **시스템 초기화** - Ollama, 모델 설치 |
-| `src/test.js` | **종합 테스트** - 전체 시스템 검증 |
+| `bin/dr-bladder.js` | **CLI Entry Point** - Starting point for all commands |
+| `python/cli.py` | **Python CLI Main** - Handles actual AI functionality |
+| `python/bladder_agent.py` | **AI Agent Core** - RAG + Ollama integration |
+| `python/config.py` | **Configuration Management** - Manages all settings |
+| `python/utils.py` | **Utilities** - System checks, logging, etc. |
+| `src/install.js` | **Automatic Installation** - Runs automatically on npm install |
+| `src/init.js` | **System Initialization** - Ollama and model installation |
+| `src/test.js` | **Comprehensive Testing** - Full system verification |
 
-## 🔧 문제 해결
+## Troubleshooting
 
-### 설치 관련 문제
+### Installation Issues
 
-1. **시스템 진단 실행**
+1. **Run System Diagnostics**
    ```bash
-   node src/test.js  # 종합 시스템 테스트
+   node src/test.js  # Comprehensive system test
    ```
 
-2. **상태 확인**
+2. **Check Status**
    ```bash
-   dr-bladder status  # 현재 시스템 상태 확인
+   dr-bladder status  # Check current system status
    ```
 
-3. **재설치**
+3. **Reinstall**
    ```bash
-   npm install  # 의존성 재설치
-   dr-bladder init  # 시스템 재초기화
+   npm install  # Reinstall dependencies
+   dr-bladder init  # Reinitialize system
    ```
 
-### Ollama 관련 문제
+### Ollama Issues
 
-1. **Ollama 서비스 확인**
+1. **Check Ollama Service**
    ```bash
-   ollama --version  # Ollama 설치 확인
-   ollama list       # 설치된 모델 목록
+   ollama --version  # Check Ollama installation
+   ollama list       # List installed models
    ```
 
-2. **Qwen 모델 수동 설치**
+2. **Manual Qwen Model Installation**
    ```bash
-   ollama pull qwen2.5:0.5b
+   ollama pull qwen2.5:1.5b
    ```
 
-3. **Ollama 서비스 재시작**
+3. **Restart Ollama Service**
    ```bash
    # Linux/macOS
    sudo systemctl restart ollama
    
-   # 또는 직접 실행
+   # Or run directly
    ollama serve
    ```
 
-### 일반적인 오류
+### Common Errors
 
-1. **"Python을 찾을 수 없습니다"**
-   - Python 3.8+ 설치 확인
-   - PATH 환경 변수 설정 확인
+1. **"Python not found"**
+   - Check Python 3.8+ installation
+   - Verify PATH environment variable settings
 
-2. **"Ollama 연결 실패"**
-   - Ollama 서비스 실행 여부 확인
-   - 포트 11434 사용 가능 여부 확인
+2. **"Ollama connection failed"**
+   - Check if Ollama service is running
+   - Verify port 11434 availability
 
-3. **"PDF 파일을 찾을 수 없습니다"**
-   - `files/` 디렉토리에 PDF 파일 존재 확인
-   - 파일 권한 확인
+3. **"PDF file not found"**
+   - Check PDF file existence in `files/` directory
+   - Verify file permissions
 
-4. **메모리 부족 오류**
-   - GPU 메모리가 부족한 경우 배치 크기 조정
-   - 설정 파일에서 `batch_size` 값 감소
-   - CPU 사용으로 전환 (GPU 메모리 절약)
+4. **Out of memory error**
+   - Adjust batch size if GPU memory is insufficient
+   - Reduce `batch_size` value in configuration file
+   - Switch to CPU usage (saves GPU memory)
 
-## 🛠️ 기술 스택
+## Tech Stack
 
-### 핵심 기술
-- **🤖 Ollama + Qwen2.5-0.5B**: 경량 로컬 AI 모델 실행
-- **🔍 RAG (Retrieval-Augmented Generation)**: 문서 기반 답변 생성
-- **⚡ ChromaDB**: 고성능 벡터 데이터베이스
-- **🧠 SentenceTransformers**: 다국어 텍스트 임베딩
+### Core Technologies
+- **Ollama + Qwen2.5-1.5B**: Enhanced local AI model execution with progress tracking
+- **RAG (Retrieval-Augmented Generation)**: Document-based answer generation
+- **ChromaDB**: High-performance vector database
+- **SentenceTransformers**: Multilingual text embedding with improved encoding handling
 
-### 개발 환경
-- **🐍 Python 3.8+**: AI 백엔드
-- **📦 Node.js 14+**: CLI 인터페이스
-- **🔥 PyTorch**: 딥러닝 프레임워크 (GPU/CPU)
-- **📄 PyPDF2**: PDF 문서 처리
+### Development Environment
+- **Python 3.8+**: AI backend
+- **Node.js 14+**: CLI interface
+- **PyTorch**: Deep learning framework (GPU/CPU)
+- **PyPDF2**: PDF document processing
 
-### 기타 라이브러리
-- **🎨 Colorama**: 터미널 컬러 출력
-- **📊 psutil**: 시스템 모니터링
-- **⏱️ tqdm**: 진행률 표시
-- **⚙️ argparse**: CLI 인터페이스
+### Additional Libraries
+- **Colorama**: Terminal color output
+- **psutil**: System monitoring
+- **tqdm**: Progress display
+- **argparse**: CLI interface
 
-## 📄 라이선스
+## License
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
+This project is distributed under the MIT License.
 
-## ⚠️ 면책 조항
+## Disclaimer
 
-이 프로젝트는 **정보 제공을 목적**으로 하며, **의학적 조언을 대체할 수 없습니다**. 
+This project is intended for **informational purposes** and **cannot replace medical advice**. 
 
-⚠️ **중요**: 모든 치료 결정은 반드시 **전문 의료인과 상의**하시기 바랍니다.
+**Important**: All treatment decisions must be discussed with **qualified healthcare professionals**.
 
-## 🤝 기여하기
+## Contributing
 
-프로젝트 개선을 위한 기여를 환영합니다!
+Contributions for project improvement are welcome!
 
 1. Fork the repository
 2. Create a feature branch
@@ -258,14 +258,14 @@ DR_BLADDER_CLI/
 4. Push to the branch
 5. Open a Pull Request
 
-## 📞 지원
+## Support
 
-문제가 발생하면 다음을 확인해주세요:
+If you encounter issues, please check:
 
-1. **GitHub Issues**: 버그 리포트 및 기능 요청
-2. **시스템 테스트**: `node src/test.js`
-3. **상태 확인**: `dr-bladder status`
+1. **GitHub Issues**: Bug reports and feature requests
+2. **System Test**: `node src/test.js`
+3. **Status Check**: `dr-bladder status`
 
 ---
 
-**🏥 DR-Bladder-CLI** - 의료진의 더 나은 진료를 위한 AI 도구
+**DR-Bladder-CLI** - AI tool for better healthcare by medical professionals

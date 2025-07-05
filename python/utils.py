@@ -82,15 +82,15 @@ def check_system_requirements() -> bool:
         bool: 요구사항 만족 여부
     """
     try:
-        print(f"{Fore.BLUE}🔍 시스템 요구사항 확인 중...{Style.RESET_ALL}")
+        print(f"{Fore.BLUE}시스템 요구사항 확인 중...{Style.RESET_ALL}")
         
         # Python 버전 확인
         python_version = sys.version_info
         if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 8):
-            print(f"{Fore.RED}❌ Python 3.8 이상이 필요합니다. 현재: {python_version.major}.{python_version.minor}{Style.RESET_ALL}")
+            print(f"{Fore.RED}Python 3.8 이상이 필요합니다. 현재: {python_version.major}.{python_version.minor}{Style.RESET_ALL}")
             return False
         
-        print(f"{Fore.GREEN}✅ Python {python_version.major}.{python_version.minor}.{python_version.micro}{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Python {python_version.major}.{python_version.minor}.{python_version.micro}{Style.RESET_ALL}")
         
         # 필수 패키지 확인
         required_packages = [
@@ -105,16 +105,16 @@ def check_system_requirements() -> bool:
                 print(f"{Fore.GREEN}✅ {package}{Style.RESET_ALL}")
             except ImportError:
                 missing_packages.append(package)
-                print(f"{Fore.RED}❌ {package} (미설치){Style.RESET_ALL}")
+                print(f"{Fore.RED}{package} (미설치){Style.RESET_ALL}")
         
         if missing_packages:
-            print(f"{Fore.RED}❌ 다음 패키지를 설치해주세요: {', '.join(missing_packages)}{Style.RESET_ALL}")
+            print(f"{Fore.RED}다음 패키지를 설치해주세요: {', '.join(missing_packages)}{Style.RESET_ALL}")
             print(f"{Fore.YELLOW}💡 설치 명령어: pip install {' '.join(missing_packages)}{Style.RESET_ALL}")
             return False
         
         # Ollama 설치 확인
         if not check_ollama_installation():
-            print(f"{Fore.RED}❌ Ollama가 설치되지 않았습니다.{Style.RESET_ALL}")
+            print(f"{Fore.RED}Ollama가 설치되지 않았습니다.{Style.RESET_ALL}")
             print(f"{Fore.YELLOW}💡 설치 방법: https://ollama.ai{Style.RESET_ALL}")
             return False
         
@@ -122,7 +122,7 @@ def check_system_requirements() -> bool:
         return True
         
     except Exception as e:
-        print(f"{Fore.RED}❌ 시스템 요구사항 확인 실패: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.RED}시스템 요구사항 확인 실패: {str(e)}{Style.RESET_ALL}")
         return False
 
 def check_ollama_installation() -> bool:
