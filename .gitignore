@@ -1,0 +1,145 @@
+# Node.js 관련
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# 패키지 잠금 파일 (선택적)
+package-lock.json
+
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Python 가상환경
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# Python 환경 설정
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE 및 에디터
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS 관련
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# 로그 파일
+*.log
+logs/
+*.log.*
+
+# 임시 파일
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 사용자 설정 및 캐시
+.dr-bladder/
+*.cache
+.cache/
+
+# ChromaDB 데이터베이스
+chroma_db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Ollama 모델 캐시 (로컬에서만 관리)
+.ollama/
+
+# Python 테스트 및 커버리지
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 백업 파일
+*.bak
+*.backup
+*~
+
+# 시스템 파일
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# 컴파일된 파일
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# 압축 파일 (PDF는 제외)
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# 설정 파일 중 민감한 정보 포함 가능한 것들
+config.local.json
+.secrets
+.env.*
+
+# 빌드 출력
+out/
+target/
+
+# 기타
+.nyc_output
+.grunt
+bower_components

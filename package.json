@@ -1,0 +1,43 @@
+{
+  "name": "dr-bladder-cli",
+  "version": "1.0.0",
+  "description": "방광암 EAU 가이드라인 CLI - Ollama Qwen 기반 독립 CLI",
+  "main": "src/index.js",
+  "bin": {
+    "dr-bladder": "./bin/dr-bladder.js"
+  },
+  "scripts": {
+    "postinstall": "node src/install.js",
+    "init": "node src/init.js",
+    "test": "node src/test.js"
+  },
+  "keywords": [
+    "medical",
+    "bladder-cancer",
+    "ai-agent",
+    "ollama",
+    "qwen",
+    "cli"
+  ],
+  "author": "DR-Bladder-CLI Team",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^9.0.0",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.4",
+    "axios": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/dr-bladder-agent.git"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ]
+}
