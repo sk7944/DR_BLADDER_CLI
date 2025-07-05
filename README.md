@@ -28,7 +28,7 @@
 
 ### 1단계: 저장소 클론
 ```bash
-git clone https://github.com/your-username/DR_BLADDER_CLI.git
+git clone https://github.com/sk7944/DR_BLADDER_CLI.git
 cd DR_BLADDER_CLI
 ```
 
