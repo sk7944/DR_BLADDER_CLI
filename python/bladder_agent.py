@@ -5,9 +5,7 @@ Ollama Qwen 모델과 RAG 기능을 통합한 독립 에이전트
 """
 
 import os
-import json
 import logging
-import asyncio
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 import unicodedata
