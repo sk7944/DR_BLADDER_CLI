@@ -27,34 +27,47 @@ class Installer {
 
     async checkPython() {
         return new Promise((resolve) => {
-            exec('python3 --version', (error, stdout) => {
-                if (error) {
-                    exec('python --version', (error2, stdout2) => {
-                        if (error2) {
-                            this.error('Python을 찾을 수 없습니다.');
-                            this.log('Python 3.8 이상을 설치해주세요: https://python.org');
-                            resolve(false);
-                        } else {
-                            const version = stdout2.match(/Python (\d+\.\d+)/);
-                            if (version && parseFloat(version[1]) >= 3.8) {
-                                this.success(`Python ${version[1]} 확인됨`);
-                                resolve('python');
-                            } else {
-                                this.error('Python 3.8 이상이 필요합니다.');
-                                resolve(false);
-                            }
-                        }
-                    });
-                } else {
-                    const version = stdout.match(/Python (\d+\.\d+)/);
-                    if (version && parseFloat(version[1]) >= 3.8) {
+            const checkPythonVersion = (cmd, output) => {
+                console.log(`디버그: ${cmd} 출력 - "${output}"`);
+                const version = output.match(/Python (\d+\.\d+\.?\d*)/);
+                if (version) {
+                    const versionNumber = parseFloat(version[1]);
+                    console.log(`디버그: 파싱된 버전 - ${versionNumber}`);
+                    if (versionNumber >= 3.8) {
                         this.success(`Python ${version[1]} 확인됨`);
-                        resolve('python3');
+                        return cmd.split(' ')[0]; // 'python3' 또는 'python' 반환
                     } else {
-                        this.error('Python 3.8 이상이 필요합니다.');
-                        resolve(false);
+                        this.error(`Python 3.8 이상이 필요합니다. 현재: ${version[1]}`);
+                        return false;
+                    }
+                } else {
+                    this.error(`Python 버전을 파싱할 수 없습니다: "${output}"`);
+                    return false;
+                }
+            };
+
+            exec('python3 --version', (error, stdout, stderr) => {
+                const output = stdout || stderr;
+                if (!error && output) {
+                    const result = checkPythonVersion('python3 --version', output);
+                    if (result) {
+                        resolve(result);
+                        return;
                     }
                 }
+                
+                // python3 실패 시 python 시도
+                exec('python --version', (error2, stdout2, stderr2) => {
+                    const output2 = stdout2 || stderr2;
+                    if (!error2 && output2) {
+                        const result = checkPythonVersion('python --version', output2);
+                        resolve(result || false);
+                    } else {
+                        this.error('Python을 찾을 수 없습니다.');
+                        this.log('Python 3.8 이상을 설치해주세요: https://python.org');
+                        resolve(false);
+                    }
+                });
             });
         });
     }
