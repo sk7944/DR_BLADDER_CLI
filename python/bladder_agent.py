@@ -167,9 +167,12 @@ class BladderCancerAgent:
             model_names = [model['name'] for model in models['models']]
             
             if self.config.model_name not in model_names:
-                self.logger.error(f"모델 '{self.config.model_name}'이 설치되지 않음")
+                self.logger.info(f"모델 '{self.config.model_name}'이 설치되지 않음")
                 self.logger.info(f"설치된 모델: {model_names}")
-                return False
+                
+                # 모델 자동 다운로드
+                if not self._download_model():
+                    return False
             
             # 모델 테스트
             response = self.ollama_client.generate(
@@ -187,6 +190,37 @@ class BladderCancerAgent:
             
         except Exception as e:
             self.logger.error(f"Ollama 초기화 실패: {str(e)}")
+            return False
+
+    def _download_model(self) -> bool:
+        """Ollama 모델 다운로드"""
+        try:
+            print(f"🔄 모델 '{self.config.model_name}' 다운로드 중... (약 400MB)")
+            print("이 작업은 몇 분 정도 소요될 수 있습니다.")
+            
+            # Ollama pull 명령 실행
+            import subprocess
+            import sys
+            
+            result = subprocess.run(
+                ['ollama', 'pull', self.config.model_name], 
+                capture_output=True, 
+                text=True,
+                timeout=1800  # 30분 타임아웃
+            )
+            
+            if result.returncode == 0:
+                print(f"✅ 모델 '{self.config.model_name}' 다운로드 완료")
+                return True
+            else:
+                print(f"❌ 모델 다운로드 실패: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print("❌ 모델 다운로드 시간 초과")
+            return False
+        except Exception as e:
+            print(f"❌ 모델 다운로드 중 오류: {str(e)}")
             return False
 
     def _init_embedding_model(self) -> bool:
