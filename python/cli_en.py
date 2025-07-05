@@ -287,7 +287,7 @@ class BladderCLI:
         if args.command == 'query':
             if not args.question:
                 print(f"{Fore.RED}❌ Please provide a question.{Style.RESET_ALL}")
-                print(f"{Fore.YELLOW}💡 Example: dr-bladder query \\"What are BCG side effects?\\"{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}💡 Example: dr-bladder query \"What are BCG side effects?\"{Style.RESET_ALL}")
                 return
             return self.query(args.question)
         
