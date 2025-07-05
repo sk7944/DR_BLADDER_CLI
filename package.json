@@ -7,7 +7,7 @@
     "dr-bladder": "./bin/dr-bladder.js"
   },
   "scripts": {
-    "postinstall": "node src/install.js && npm install -g .",
+    "postinstall": "node src/install.js",
     "init": "node src/init.js",
     "test": "node src/test.js"
   },

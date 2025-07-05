@@ -237,22 +237,23 @@ class Installer {
         console.log('\n' + '='.repeat(50));
         this.success('DR-Bladder-CLI basic installation completed!');
         
-        // 전역 설치 시도
-        console.log('\n' + chalk.blue('Installing globally...'));
-        
         if (!ollamaInstalled) {
             console.log('\n' + chalk.yellow('Next steps:'));
             console.log('1. Install Ollama following the instructions above');
-            console.log('2. After installation: ' + chalk.green('dr-bladder init'));
+            console.log('2. Install globally: ' + chalk.green('npm install -g .'));
+            console.log('3. After installation: ' + chalk.green('dr-bladder init'));
         } else {
             console.log('\n' + chalk.yellow('Next steps:'));
-            console.log(chalk.green('dr-bladder init') + '  # Download Qwen model and initialize');
+            console.log('1. Install globally: ' + chalk.green('npm install -g .'));
+            console.log('2. Initialize: ' + chalk.green('dr-bladder init'));
         }
         
-        console.log('\n' + chalk.yellow('Usage:'));
+        console.log('\n' + chalk.yellow('Usage after global install:'));
         console.log('dr-bladder query "What are BCG side effects?"');
         console.log('dr-bladder chat  # Interactive mode');
         console.log('dr-bladder status  # Check system status');
+        console.log('\n' + chalk.yellow('Or use with npx:'));
+        console.log('npx dr-bladder init');
         console.log('');
     }
 }
