@@ -164,7 +164,19 @@ class BladderCancerAgent:
             
             # 모델 존재 확인
             models = self.ollama_client.list()
-            model_names = [model['name'] for model in models['models']]
+            self.logger.info(f"Ollama 응답: {models}")
+            
+            # 안전한 모델 목록 추출
+            if 'models' in models and isinstance(models['models'], list):
+                model_names = []
+                for model in models['models']:
+                    if isinstance(model, dict) and 'name' in model:
+                        model_names.append(model['name'])
+                    else:
+                        self.logger.warning(f"예상하지 못한 모델 형식: {model}")
+            else:
+                self.logger.warning(f"예상하지 못한 Ollama 응답 형식: {models}")
+                model_names = []
             
             if self.config.model_name not in model_names:
                 self.logger.info(f"모델 '{self.config.model_name}'이 설치되지 않음")
