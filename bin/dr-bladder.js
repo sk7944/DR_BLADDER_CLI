@@ -7,7 +7,7 @@ const os = require('os');
 
 // Python 스크립트 경로
 const pythonDir = path.join(__dirname, '..', 'python');
-const cliScript = path.join(pythonDir, 'cli.py');
+const cliScript = path.join(pythonDir, 'cli_en.py');
 
 // Python 실행 파일 찾기
 function findPython() {
@@ -24,7 +24,7 @@ function findPython() {
         }
     }
     
-    console.error('❌ Python을 찾을 수 없습니다. Python 3.8 이상을 설치해주세요.');
+    console.error('❌ Python not found. Please install Python 3.8 or higher.');
     process.exit(1);
 }
 
@@ -44,7 +44,7 @@ function main() {
     });
     
     python.on('error', (error) => {
-        console.error(`❌ Python 실행 오류: ${error.message}`);
+        console.error(`❌ Python execution error: ${error.message}`);
         process.exit(1);
     });
 }
@@ -52,16 +52,17 @@ function main() {
 // 도움말 표시
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
     console.log(`
-🏥 DR-Bladder-CLI - 방광암 EAU 가이드라인 AI Agent
+🏥 DR-Bladder-CLI - Bladder Cancer EAU Guidelines AI Agent
 
-사용법:
-  dr-bladder query "BCG 치료의 부작용은?"     # 질문하기
-  dr-bladder init                            # 초기 설정
-  dr-bladder status                          # 상태 확인
-  dr-bladder --help                          # 도움말
+Usage:
+  dr-bladder query "What are BCG side effects?"     # Ask questions
+  dr-bladder chat                                    # Interactive mode
+  dr-bladder init                                    # Initial setup
+  dr-bladder status                                  # Check status
+  dr-bladder --help                                  # Show help
 
-설치 후 첫 실행:
-  dr-bladder init    # Ollama 및 Qwen 모델 설치
+First run after installation:
+  dr-bladder init    # Install Ollama and Qwen model
     `);
     process.exit(0);
 }

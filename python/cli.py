@@ -30,11 +30,11 @@ class BladderCLI:
         self.logger = setup_logging()
         
     def print_banner(self):
-        """배너 출력"""
+        """Print banner"""
         banner = f"""
 {Fore.CYAN}╔════════════════════════════════════════════════════════════════╗
 ║                    🏥 DR-Bladder-CLI                          ║
-║              방광암 EAU 가이드라인 AI Agent                    ║
+║              Bladder Cancer EAU Guidelines AI Agent           ║
 ║                                                                ║
 ║           Powered by Ollama + Qwen2.5 + RAG                   ║
 ╚════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
