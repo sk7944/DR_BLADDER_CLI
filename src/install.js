@@ -237,6 +237,9 @@ class Installer {
         console.log('\n' + '='.repeat(50));
         this.success('DR-Bladder-CLI basic installation completed!');
         
+        // 전역 설치 시도
+        console.log('\n' + chalk.blue('Installing globally...'));
+        
         if (!ollamaInstalled) {
             console.log('\n' + chalk.yellow('Next steps:'));
             console.log('1. Install Ollama following the instructions above');
