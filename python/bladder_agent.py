@@ -230,10 +230,12 @@ class BladderCancerAgent:
         try:
             print(f"모델 '{self.config.model_name}' 다운로드 중... (약 1GB)")
             print("이 작업은 몇 분 정도 소요될 수 있습니다.")
+            print("-" * 60)
             
-            # Ollama pull 명령 실행 (실시간 출력으로 진행상황 표시)
+            # Ollama pull 명령 실행
             import subprocess
             import sys
+            import re
             
             # 실시간 출력을 위한 Popen 사용
             process = subprocess.Popen(
@@ -245,23 +247,54 @@ class BladderCancerAgent:
                 universal_newlines=True
             )
             
-            # 실시간 출력 및 진행상황 표시
-            with tqdm(desc="다운로드 진행", unit="B", unit_scale=True) as pbar:
+            # 진행상황 추적 변수
+            current_step = "준비 중"
+            progress_count = 0
+            last_significant_line = ""
+            
+            # 단순한 진행 표시기
+            with tqdm(desc=current_step, bar_format='{desc}: {n}/100 {bar}', total=100) as pbar:
                 for line in iter(process.stdout.readline, ''):
                     line = line.strip()
-                    if line:
-                        # 다운로드 진행률 파싱
-                        if 'pulling' in line.lower() or 'downloading' in line.lower():
-                            pbar.set_description(f"다운로드 중: {line[:50]}...")
-                            pbar.update(1)
-                        elif 'verifying' in line.lower():
-                            pbar.set_description("검증 중...")
-                        elif 'success' in line.lower():
-                            pbar.set_description("완료")
-                            pbar.update(100)
+                    if not line:
+                        continue
+                    
+                    # 중요한 라인만 출력
+                    is_important = False
+                    
+                    # pulling manifest, config, model 등 주요 단계 감지
+                    if 'pulling manifest' in line.lower():
+                        current_step = "Downloading manifest"
+                        pbar.set_description(current_step)
+                        pbar.update(10)
+                        is_important = True
+                    elif 'pulling' in line.lower() and 'sha256:' in line.lower():
+                        if 'config' in line.lower():
+                            current_step = "Downloading config"
+                        else:
+                            current_step = "Downloading model layers"
+                        pbar.set_description(current_step)
+                        progress_count += 15
+                        pbar.update(15)
+                        is_important = True
+                    elif 'verifying' in line.lower():
+                        current_step = "Verifying download"
+                        pbar.set_description(current_step)
+                        pbar.update(10)
+                        is_important = True
+                    elif 'success' in line.lower() or 'complete' in line.lower():
+                        current_step = "Download complete"
+                        pbar.set_description(current_step)
+                        pbar.update(100 - pbar.n)  # 나머지 모두 채우기
+                        is_important = True
+                    
+                    # 중요한 라인만 출력 (중복 방지)
+                    if is_important and line != last_significant_line:
                         print(f"  {line}")
+                        last_significant_line = line
             
             process.wait()
+            print("-" * 60)
             
             if process.returncode == 0:
                 print(f"모델 '{self.config.model_name}' 다운로드 완료")
