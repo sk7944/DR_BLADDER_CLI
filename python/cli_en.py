@@ -121,11 +121,9 @@ class BladderCLI:
                 print(f"\\n{Fore.GREEN}🏥 Answer:{Style.RESET_ALL}")
                 print(f"{response['answer']}")
                 
-                # Show reference documents
+                # Simple reference indication
                 if response.get('sources'):
-                    print(f"\\n{Fore.CYAN}📚 Reference documents:{Style.RESET_ALL}")
-                    for i, source in enumerate(response['sources'], 1):
-                        print(f"  {i}. {source}")
+                    print(f"\\n{Fore.CYAN}📚 Based on {len(response['sources'])} sections from EAU Guidelines{Style.RESET_ALL}")
                 
                 return True
             else:
@@ -170,11 +168,9 @@ class BladderCLI:
                     print(f"\\n{Fore.GREEN}🏥 Answer:{Style.RESET_ALL}")
                     print(f"{response['answer']}")
                     
-                    # Show reference documents
+                    # Simple reference indication
                     if response.get('sources'):
-                        print(f"\\n{Fore.CYAN}📚 Reference documents:{Style.RESET_ALL}")
-                        for i, source in enumerate(response['sources'], 1):
-                            print(f"  {i}. {source}")
+                        print(f"\\n{Fore.CYAN}📚 Based on {len(response['sources'])} sections from EAU Guidelines{Style.RESET_ALL}")
                 else:
                     error_msg = response.get('error', 'Unknown error') if response else 'No response'
                     print(f"{Fore.RED}❌ Answer generation failed: {error_msg}{Style.RESET_ALL}")

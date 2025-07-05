@@ -121,11 +121,9 @@ class BladderCLI:
                 print(f"\n{Fore.GREEN}🏥 답변:{Style.RESET_ALL}")
                 print(f"{response['answer']}")
                 
-                # 참조 문서 정보 표시
+                # 간단한 참조 표시
                 if response.get('sources'):
-                    print(f"\n{Fore.CYAN}📚 참조 문서:{Style.RESET_ALL}")
-                    for i, source in enumerate(response['sources'], 1):
-                        print(f"  {i}. {source}")
+                    print(f"\n{Fore.CYAN}📚 EAU 가이드라인 {len(response['sources'])}개 섹션 참조{Style.RESET_ALL}")
                 
                 return True
             else:
@@ -170,11 +168,9 @@ class BladderCLI:
                     print(f"\n{Fore.GREEN}🏥 답변:{Style.RESET_ALL}")
                     print(f"{response['answer']}")
                     
-                    # 참조 문서 정보 표시
+                    # 간단한 참조 표시
                     if response.get('sources'):
-                        print(f"\n{Fore.CYAN}📚 참조 문서:{Style.RESET_ALL}")
-                        for i, source in enumerate(response['sources'], 1):
-                            print(f"  {i}. {source}")
+                        print(f"\n{Fore.CYAN}📚 EAU 가이드라인 {len(response['sources'])}개 섹션 참조{Style.RESET_ALL}")
                 else:
                     error_msg = response.get('error', '알 수 없는 오류') if response else '응답 없음'
                     print(f"{Fore.RED}❌ 답변 생성 실패: {error_msg}{Style.RESET_ALL}")
