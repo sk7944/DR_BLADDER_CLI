@@ -14,34 +14,36 @@ class Installer {
     }
 
     log(message) {
-        console.log(chalk.blue('🏥 DR-Bladder-CLI:'), message);
+        console.log(chalk.blue('[DR-Bladder-CLI]'), message);
     }
 
     error(message) {
-        console.error(chalk.red('❌ 오류:'), message);
+        console.error(chalk.red('[ERROR]'), message);
     }
 
     success(message) {
-        console.log(chalk.green('✅'), message);
+        console.log(chalk.green('[SUCCESS]'), message);
     }
 
     async checkPython() {
         return new Promise((resolve) => {
             const checkPythonVersion = (cmd, output) => {
-                console.log(`디버그: ${cmd} 출력 - "${output}"`);
-                const version = output.match(/Python (\d+\.\d+\.?\d*)/);
+                const version = output.match(/Python (\d+)\.(\d+)\.?(\d*)/);
                 if (version) {
-                    const versionNumber = parseFloat(version[1]);
-                    console.log(`디버그: 파싱된 버전 - ${versionNumber}`);
-                    if (versionNumber >= 3.8) {
-                        this.success(`Python ${version[1]} 확인됨`);
-                        return cmd.split(' ')[0]; // 'python3' 또는 'python' 반환
+                    const major = parseInt(version[1]);
+                    const minor = parseInt(version[2]);
+                    const versionString = version[1] + '.' + version[2] + (version[3] ? '.' + version[3] : '');
+                    
+                    // Python 3.8 이상 확인
+                    if (major > 3 || (major === 3 && minor >= 8)) {
+                        this.success(`Python ${versionString} detected`);
+                        return cmd.split(' ')[0];
                     } else {
-                        this.error(`Python 3.8 이상이 필요합니다. 현재: ${version[1]}`);
+                        this.error(`Python 3.8+ required. Current: ${versionString}`);
                         return false;
                     }
                 } else {
-                    this.error(`Python 버전을 파싱할 수 없습니다: "${output}"`);
+                    this.error(`Cannot parse Python version: "${output}"`);
                     return false;
                 }
             };
@@ -56,15 +58,14 @@ class Installer {
                     }
                 }
                 
-                // python3 실패 시 python 시도
                 exec('python --version', (error2, stdout2, stderr2) => {
                     const output2 = stdout2 || stderr2;
                     if (!error2 && output2) {
                         const result = checkPythonVersion('python --version', output2);
                         resolve(result || false);
                     } else {
-                        this.error('Python을 찾을 수 없습니다.');
-                        this.log('Python 3.8 이상을 설치해주세요: https://python.org');
+                        this.error('Python not found.');
+                        this.log('Please install Python 3.8+: https://python.org');
                         resolve(false);
                     }
                 });
@@ -73,7 +74,7 @@ class Installer {
     }
 
     async installPythonDeps(pythonCmd) {
-        const spinner = ora('Python 의존성 패키지 설치 중...').start();
+        const spinner = ora('Installing Python dependencies...').start();
         
         return new Promise((resolve) => {
             const pip = spawn(pythonCmd, ['-m', 'pip', 'install', '-r', this.requirementsPath], {
@@ -92,10 +93,10 @@ class Installer {
             pip.on('close', (code) => {
                 spinner.stop();
                 if (code === 0) {
-                    this.success('Python 패키지 설치 완료');
+                    this.success('Python dependencies installed');
                     resolve(true);
                 } else {
-                    this.error('Python 패키지 설치 실패');
+                    this.error('Python dependencies installation failed');
                     console.log(output);
                     resolve(false);
                 }
@@ -118,32 +119,32 @@ class Installer {
     }
 
     showOllamaInstallInstructions() {
-        console.log('\n' + chalk.cyan('🤖 Ollama 설치가 필요합니다!'));
+        console.log('\n' + chalk.cyan('Ollama installation required!'));
         console.log('=' .repeat(50));
         
         const platform = os.platform();
         
         if (platform === 'linux' || platform === 'darwin') {
-            console.log(chalk.yellow('📋 Linux/macOS 설치 방법:'));
+            console.log(chalk.yellow('Linux/macOS installation:'));
             console.log('');
-            console.log('1. 터미널에서 다음 명령어 실행:');
+            console.log('1. Run in terminal:');
             console.log(chalk.green('   curl -fsSL https://ollama.ai/install.sh | sh'));
             console.log('');
-            console.log('2. 설치 완료 후 서비스 시작:');
+            console.log('2. Start service:');
             console.log(chalk.green('   ollama serve &'));
         } else if (platform === 'win32') {
-            console.log(chalk.yellow('📋 Windows 설치 방법:'));
+            console.log(chalk.yellow('Windows installation:'));
             console.log('');
-            console.log('1. 다음 링크에서 설치 파일 다운로드:');
+            console.log('1. Download installer from:');
             console.log(chalk.blue('   https://ollama.ai/download'));
             console.log('');
-            console.log('2. 다운로드한 설치 파일 실행');
-            console.log('3. 설치 완료 후 자동으로 서비스 시작됨');
+            console.log('2. Run the installer');
+            console.log('3. Service starts automatically');
         }
         
         console.log('');
-        console.log(chalk.yellow('💡 설치 완료 후:'));
-        console.log('   dr-bladder init  # 이 명령어로 초기화 재시도');
+        console.log(chalk.yellow('After installation:'));
+        console.log('   dr-bladder init  # Run initialization');
         console.log('');
     }
 
@@ -210,7 +211,7 @@ class Installer {
     }
 
     async run() {
-        console.log(chalk.yellow('🏥 DR-Bladder-CLI 설치 시작'));
+        console.log(chalk.yellow('DR-Bladder-CLI Installation Started'));
         console.log('='.repeat(50));
 
         // 1. Python 확인
@@ -234,21 +235,21 @@ class Installer {
         const ollamaInstalled = await this.checkOllama();
         
         console.log('\n' + '='.repeat(50));
-        this.success('DR-Bladder-CLI 기본 설치 완료!');
+        this.success('DR-Bladder-CLI basic installation completed!');
         
         if (!ollamaInstalled) {
-            console.log('\n' + chalk.yellow('⚠️  다음 단계:'));
-            console.log('1. 위의 안내를 따라 Ollama를 설치하세요');
-            console.log('2. 설치 완료 후: ' + chalk.green('dr-bladder init'));
+            console.log('\n' + chalk.yellow('Next steps:'));
+            console.log('1. Install Ollama following the instructions above');
+            console.log('2. After installation: ' + chalk.green('dr-bladder init'));
         } else {
-            console.log('\n' + chalk.yellow('🚀 다음 단계:'));
-            console.log(chalk.green('dr-bladder init') + '  # Qwen 모델 다운로드 및 초기화');
+            console.log('\n' + chalk.yellow('Next steps:'));
+            console.log(chalk.green('dr-bladder init') + '  # Download Qwen model and initialize');
         }
         
-        console.log('\n' + chalk.yellow('💡 사용 방법:'));
-        console.log('dr-bladder query "BCG 치료의 부작용은?"');
-        console.log('dr-bladder chat  # 대화형 모드');
-        console.log('dr-bladder status  # 시스템 상태 확인');
+        console.log('\n' + chalk.yellow('Usage:'));
+        console.log('dr-bladder query "What are BCG side effects?"');
+        console.log('dr-bladder chat  # Interactive mode');
+        console.log('dr-bladder status  # Check system status');
         console.log('');
     }
 }
