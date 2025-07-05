@@ -338,14 +338,32 @@ class BladderCancerAgent:
                 pdf_reader = PyPDF2.PdfReader(file)
                 
                 for page_num in range(len(pdf_reader.pages)):
-                    page = pdf_reader.pages[page_num]
-                    text = page.extract_text()
-                    
-                    if text and text.strip():
-                        # 텍스트 정리
-                        cleaned_text = self._clean_text(text)
-                        if cleaned_text:
-                            documents.append(cleaned_text)
+                    try:
+                        page = pdf_reader.pages[page_num]
+                        text = page.extract_text()
+                        
+                        if text and text.strip():
+                            # 안전한 텍스트 처리
+                            try:
+                                # UTF-8 인코딩 확인 및 변환
+                                if isinstance(text, bytes):
+                                    text = text.decode('utf-8', errors='ignore')
+                                elif isinstance(text, str):
+                                    # 문자열을 바이트로 변환 후 다시 디코딩하여 안전하게 처리
+                                    text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+                                
+                                # 텍스트 정리
+                                cleaned_text = self._clean_text(text)
+                                if cleaned_text and len(cleaned_text.strip()) > 10:
+                                    documents.append(cleaned_text)
+                                    
+                            except UnicodeError as e:
+                                self.logger.warning(f"페이지 {page_num} 인코딩 오류, 건너뜀: {e}")
+                                continue
+                                
+                    except Exception as e:
+                        self.logger.warning(f"페이지 {page_num} 처리 실패, 건너뜀: {e}")
+                        continue
             
             return documents
             
@@ -358,19 +376,33 @@ class BladderCancerAgent:
         if not text:
             return ""
         
-        # 유니코드 정규화
-        text = unicodedata.normalize('NFC', text)
-        
-        # 불필요한 문자 제거
-        text = re.sub(r'[^\w\s\-\.\,\;\:\(\)\[\]\{\}\'\"\/\%\&\+\=\<\>\!\?\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]', ' ', text)
-        
-        # 연속된 공백 제거
-        text = re.sub(r'\s+', ' ', text)
-        
-        # 앞뒤 공백 제거
-        text = text.strip()
-        
-        return text
+        try:
+            # 안전한 인코딩 처리
+            if isinstance(text, bytes):
+                text = text.decode('utf-8', errors='ignore')
+            
+            # 유니코드 정규화
+            text = unicodedata.normalize('NFC', text)
+            
+            # 불필요한 문자 제거 (더 안전한 패턴)
+            # 영문, 숫자, 한글, 기본 구두점만 유지
+            text = re.sub(r'[^\w\s\-\.\,\;\:\(\)\[\]\{\}\'\"\/\%\&\+\=\<\>\!\?\uAC00-\uD7A3]', ' ', text, flags=re.UNICODE)
+            
+            # 연속된 공백 제거
+            text = re.sub(r'\s+', ' ', text)
+            
+            # 앞뒤 공백 제거
+            text = text.strip()
+            
+            return text
+            
+        except Exception as e:
+            self.logger.warning(f"텍스트 정리 중 오류: {e}")
+            # 오류 발생 시 원본 텍스트의 안전한 버전 반환
+            try:
+                return str(text).encode('ascii', errors='ignore').decode('ascii')
+            except:
+                return ""
 
     def _filter_relevant_documents(self, documents: List[str]) -> List[str]:
         """방광암 관련 문서 필터링"""
