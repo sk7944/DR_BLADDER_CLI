@@ -243,8 +243,8 @@ class BladderCLI:
             print(f"{Fore.RED}Error checking status: {str(e)}{Style.RESET_ALL}")
 
     def _print_structured_answer(self, answer_text: str):
-        """답변을 자연스럽게 출력"""
-        # 단순히 답변을 그대로 출력
+        """답변을 plain text로 그대로 출력"""
+        # AI의 답변을 아무런 가공 없이 그대로 출력
         print(answer_text)
 
     def edit_config(self):

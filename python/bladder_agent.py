@@ -838,68 +838,13 @@ class BladderCancerAgent:
             if not answer:
                 return "I'm sorry, I cannot generate an answer based on the available information."
             
-            # 답변 포맷팅 (줄바꿈 처리)
-            formatted_answer = self._format_answer(answer)
-            
-            return formatted_answer
+            # 답변을 그대로 반환 (포맷팅 없이)
+            return answer
             
         except Exception as e:
             self.logger.error(f"답변 생성 실패: {str(e)}")
             return f"An error occurred while generating the answer: {str(e)}"
     
-    def _format_answer(self, answer: str) -> str:
-        """답변 포맷팅 - 번호 목록 줄바꿈 처리"""
-        try:
-            import re
-            
-            # 원본 답변 저장 (디버깅용)
-            original_answer = answer
-            
-            # 먼저 기존 답변에서 불필요한 공백 정리
-            answer = answer.strip()
-            
-            # 모든 가능한 패턴을 처리
-            # 1. 콜론 뒤에 바로 숫자가 오는 경우: "guidelines:1." -> "guidelines:\n1."
-            answer = re.sub(r':(\d+)\.', r':\n\1.', answer)
-            
-            # 2. 마침표 뒤에 바로 숫자가 오는 경우: "factor.2." -> "factor.\n2."
-            answer = re.sub(r'\.(\d+)\.', r'.\n\1.', answer)
-            
-            # 3. 한국어 어미 뒤에 숫자가 오는 경우
-            answer = re.sub(r'(습니다|됩니다|입니다|있습니다|합니다|같습니다)(\d+)\.', r'\1\n\2.', answer)
-            
-            # 4. 한글 문자 뒤에 바로 숫자가 오는 경우
-            answer = re.sub(r'([가-힣])(\d+)\.', r'\1\n\2.', answer)
-            
-            # 5. 영어 문자 뒤에 바로 숫자가 오는 경우
-            answer = re.sub(r'([a-zA-Z])(\d+)\.', r'\1\n\2.', answer)
-            
-            # 6. 공백이 있는 경우도 처리
-            answer = re.sub(r'([:\.])\s+(\d+)\.', r'\1\n\2.', answer)
-            answer = re.sub(r'([가-힣a-zA-Z])\s+(\d+)\.', r'\1\n\2.', answer)
-            
-            # 7. 번호 뒤에 공백이 없는 경우 공백 추가
-            answer = re.sub(r'(\n\d+\.)([가-힣A-Za-z\*])', r'\1 \2', answer)
-            
-            # 8. 연속된 줄바꿈 정리
-            answer = re.sub(r'\n\s*\n\s*\n+', r'\n\n', answer)
-            
-            # 9. 번호 앞에 불필요한 공백 제거
-            answer = re.sub(r'\n\s+(\d+\.)', r'\n\1', answer)
-            
-            # 10. 최종 정리
-            answer = answer.strip()
-            
-            # 디버깅을 위해 변경사항 출력
-            if answer != original_answer:
-                print(f"DEBUG: 답변 포맷팅이 적용되었습니다")
-                print(f"DEBUG: 원본 길이: {len(original_answer)}, 변경 후 길이: {len(answer)}")
-            
-            return answer
-            
-        except Exception as e:
-            self.logger.warning(f"답변 포맷팅 중 오류: {e}")
-            return answer
 
     def _create_prompt(self, question: str, context: str) -> str:
         """프롬프트 생성"""
