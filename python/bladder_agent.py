@@ -858,7 +858,7 @@ class BladderCancerAgent:
             # 먼저 기존 답변에서 불필요한 공백 정리
             answer = answer.strip()
             
-            # 가장 직접적인 패턴부터 처리
+            # 모든 가능한 패턴을 처리
             # 1. 콜론 뒤에 바로 숫자가 오는 경우: "guidelines:1." -> "guidelines:\n1."
             answer = re.sub(r':(\d+)\.', r':\n\1.', answer)
             
@@ -879,7 +879,7 @@ class BladderCancerAgent:
             answer = re.sub(r'([가-힣a-zA-Z])\s+(\d+)\.', r'\1\n\2.', answer)
             
             # 7. 번호 뒤에 공백이 없는 경우 공백 추가
-            answer = re.sub(r'(\n\d+\.)([가-힣A-Za-z])', r'\1 \2', answer)
+            answer = re.sub(r'(\n\d+\.)([가-힣A-Za-z\*])', r'\1 \2', answer)
             
             # 8. 연속된 줄바꿈 정리
             answer = re.sub(r'\n\s*\n\s*\n+', r'\n\n', answer)
@@ -890,12 +890,11 @@ class BladderCancerAgent:
             # 10. 최종 정리
             answer = answer.strip()
             
-            # 변경사항이 있는지 확인
+            # 디버깅을 위해 변경사항 출력
             if answer != original_answer:
-                self.logger.debug(f"답변 포맷팅이 적용됨")
-            else:
-                self.logger.debug(f"답변 포맷팅 적용되지 않음")
-                
+                print(f"DEBUG: 답변 포맷팅이 적용되었습니다")
+                print(f"DEBUG: 원본 길이: {len(original_answer)}, 변경 후 길이: {len(answer)}")
+            
             return answer
             
         except Exception as e:
@@ -918,12 +917,19 @@ class BladderCancerAgent:
 - 한국어로 질문하면 한국어로 답변하세요
 - 정확하고 구체적으로 답변하며, 가능하면 특정 섹션을 인용하세요
 
+중요한 형식 지시사항:
+- 번호 목록을 사용할 때는 반드시 다음 형식을 사용하세요:
+  올바른 형식: "다음과 같습니다:\n1. 첫 번째 항목\n2. 두 번째 항목"
+  잘못된 형식: "다음과 같습니다:1. 첫 번째 항목2. 두 번째 항목"
+- 각 번호는 새로운 줄에서 시작해야 합니다
+- 번호 뒤에는 공백을 하나 넣으세요
+
 EAU 가이드라인 컨텍스트:
 {context}
 
 질문: {question}
 
-위의 가이드라인 문서만을 바탕으로 한국어로 답변하세요:"""
+위의 가이드라인 문서만을 바탕으로 한국어로 답변하세요. 번호 목록 사용 시 올바른 형식을 따르세요:"""
         else:
             prompt = f"""You are a medical AI that answers questions based solely on EAU (European Association of Urology) bladder cancer guidelines.
 
@@ -935,12 +941,19 @@ IMPORTANT INSTRUCTIONS:
 - Respond in English for English questions
 - Be precise and cite specific sections when possible
 
+IMPORTANT FORMATTING INSTRUCTIONS:
+- When using numbered lists, use this exact format:
+  Correct format: "factors include:\n1. First item\n2. Second item"
+  Incorrect format: "factors include:1. First item2. Second item"
+- Each number must start on a new line
+- Put one space after each number
+
 EAU Guidelines Context:
 {context}
 
 Question: {question}
 
-Answer based solely on the above guideline documents (respond in English):"""
+Answer based solely on the above guideline documents (respond in English). Use correct formatting for numbered lists:"""
         
         return prompt
         
