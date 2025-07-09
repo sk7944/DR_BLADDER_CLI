@@ -51,7 +51,8 @@ class Config:
         
         # RAG 설정
         self.top_k = 3  # 검색할 문서 수
-        self.batch_size = 32  # 벡터화 배치 크기
+        # 벡터화 배치 크기 (Windows에서는 더 작은 값 사용)
+        self.batch_size = 16 if os.name == 'nt' else 32
         
         # 모델 생성 설정
         self.temperature = 0.7

@@ -68,6 +68,7 @@ npx dr-bladder init
 
 ### CLI Commands
 
+**Linux/macOS (if globally installed):**
 ```bash
 # Single question
 dr-bladder query "What are the side effects of BCG treatment?"
@@ -85,6 +86,24 @@ dr-bladder config
 dr-bladder --help
 ```
 
+**Windows (recommended to use npx):**
+```bash
+# Single question
+npx dr-bladder query "What are the side effects of BCG treatment?"
+
+# Interactive mode (recommended)
+npx dr-bladder chat
+
+# Check system status
+npx dr-bladder status
+
+# Edit configuration
+npx dr-bladder config
+
+# Help
+npx dr-bladder --help
+```
+
 ### Example Questions
 
 **Input Examples (Korean - responds in English):**
@@ -100,9 +119,18 @@ dr-bladder --help
 
 ### Interactive Mode Usage
 
+**Linux/macOS:**
 ```bash
 $ dr-bladder chat
+```
 
+**Windows:**
+```bash
+$ npx dr-bladder chat
+```
+
+**Example Session:**
+```
 DR-Bladder-CLI - Bladder Cancer EAU Guidelines AI Agent
 Interactive mode started (Exit: 'quit', 'exit', 'q')
 
@@ -168,13 +196,22 @@ DR_BLADDER_CLI/
 
 2. **Check Status**
    ```bash
-   dr-bladder status  # Check current system status
+   # Linux/macOS
+   dr-bladder status
+   
+   # Windows
+   npx dr-bladder status
    ```
 
 3. **Reinstall**
    ```bash
    npm install  # Reinstall dependencies
-   dr-bladder init  # Reinitialize system
+   
+   # Linux/macOS
+   dr-bladder init
+   
+   # Windows
+   npx dr-bladder init
    ```
 
 ### Ollama Issues
@@ -264,7 +301,9 @@ If you encounter issues, please check:
 
 1. **GitHub Issues**: Bug reports and feature requests
 2. **System Test**: `node src/test.js`
-3. **Status Check**: `dr-bladder status`
+3. **Status Check**: 
+   - Linux/macOS: `dr-bladder status`
+   - Windows: `npx dr-bladder status`
 
 ---
 

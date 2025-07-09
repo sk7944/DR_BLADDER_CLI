@@ -496,25 +496,54 @@ class BladderCancerAgent:
     def _vectorize_and_store(self, documents: List[str]):
         """문서 벡터화 및 ChromaDB 저장"""
         try:
-            # 배치 크기 설정
+            # 배치 크기 설정 (Windows에서는 더 작은 배치 크기 사용)
             batch_size = self.config.batch_size
+            if os.name == 'nt':  # Windows
+                batch_size = min(batch_size, 16)  # Windows에서는 최대 16으로 제한
+            
+            print(f"문서 벡터화 시작... (총 {len(documents)}개 문서, 배치 크기: {batch_size})")
             
             for i in tqdm(range(0, len(documents), batch_size), desc="문서 벡터화"):
-                batch = documents[i:i+batch_size]
-                
-                # 임베딩 생성
-                embeddings = self.embedding_model.encode(batch, convert_to_tensor=False)
-                
-                # ChromaDB에 저장
-                ids = [f"doc_{i+j}" for j in range(len(batch))]
-                self.collection.add(
-                    embeddings=embeddings.tolist(),
-                    documents=batch,
-                    ids=ids
-                )
-                
+                try:
+                    batch = documents[i:i+batch_size]
+                    
+                    # 메모리 사용량 확인 (Windows에서)
+                    if os.name == 'nt':
+                        import psutil
+                        memory_percent = psutil.virtual_memory().percent
+                        if memory_percent > 80:
+                            print(f"⚠️  메모리 사용량이 높습니다 ({memory_percent:.1f}%). 배치 크기를 줄입니다.")
+                            batch_size = max(1, batch_size // 2)
+                            batch = documents[i:i+batch_size]
+                    
+                    # 임베딩 생성
+                    embeddings = self.embedding_model.encode(
+                        batch, 
+                        convert_to_tensor=False,
+                        show_progress_bar=False  # 중복 진행 표시 방지
+                    )
+                    
+                    # ChromaDB에 저장
+                    ids = [f"doc_{i+j}" for j in range(len(batch))]
+                    self.collection.add(
+                        embeddings=embeddings.tolist(),
+                        documents=batch,
+                        ids=ids
+                    )
+                    
+                except MemoryError as e:
+                    self.logger.error(f"메모리 부족 오류 (배치 {i//batch_size + 1}): {str(e)}")
+                    print(f"❌ 메모리 부족으로 인해 벡터화에 실패했습니다. 배치 크기를 줄여서 다시 시도해주세요.")
+                    raise
+                except Exception as e:
+                    self.logger.error(f"배치 {i//batch_size + 1} 처리 중 오류: {str(e)}")
+                    print(f"❌ 배치 {i//batch_size + 1} 처리 중 오류가 발생했습니다: {str(e)}")
+                    # 개별 배치 오류는 건너뛰고 계속 진행
+                    continue
+                    
         except Exception as e:
             self.logger.error(f"벡터화 및 저장 실패: {str(e)}")
+            print(f"❌ 문서 벡터화 중 오류가 발생했습니다: {str(e)}")
             raise
 
     def ask_question(self, question: str) -> Dict[str, Any]:
