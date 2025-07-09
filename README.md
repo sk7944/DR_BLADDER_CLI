@@ -1,15 +1,17 @@
 # DR-Bladder-CLI - Bladder Cancer EAU Guidelines AI Agent
 
-This project is an independent CLI AI Agent based on bladder cancer EAU (European Association of Urology) guidelines. It utilizes Ollama + Qwen2.5-1.5B model to provide AI-generated answers by searching relevant information from the latest guideline PDF documents when users ask questions about bladder cancer in natural language. All responses are provided in English regardless of the input language.
+This project is an independent CLI AI Agent based on bladder cancer EAU (European Association of Urology) guidelines. It utilizes Ollama + Qwen2.5-1.5B model to provide AI-generated answers by searching relevant information from the latest guideline PDF documents when users ask questions about bladder cancer in natural language. The system now supports both Korean and English input/output with improved encoding handling.
 
 ## Key Features
 
 - **AI-powered Answer Generation**: Intelligent answer generation through Ollama + Qwen2.5-1.5B model
 - **Latest Medical Information**: Direct information retrieval from 2025 EAU Bladder Cancer Guidelines PDF
 - **Natural Language Q&A**: Handles natural questions like "What are the side effects of BCG treatment?"
-- **Multi-language Input**: Accepts questions in Korean or English, but always responds in English
+- **Multi-language Support**: Accepts questions in Korean or English, responds in the same language
+- **Cross-platform UTF-8 Support**: Unified UTF-8 encoding handling for all operating systems
 - **GPU Acceleration**: Automatically utilizes NVIDIA GPU when available
 - **Interactive Mode**: Chat interface enabling continuous questions and answers
+- **Windows Compatibility**: Improved Windows support with memory-based vector storage
 - **Easy Installation**: One-click installation system with progress tracking for immediate use without complex setup
 
 ## System Requirements
@@ -106,13 +108,13 @@ npx dr-bladder --help
 
 ### Example Questions
 
-**Input Examples (Korean - responds in English):**
-- "BCG 치료의 부작용은 무엇인가요?" → English response about BCG side effects
-- "방광암의 재발 위험 요인에 대해 알려주세요" → English response about recurrence risk factors
-- "TURBT 수술 후 관리 방법은?" → English response about post-TURBT management
-- "방광암 병기 분류에 대해 설명해주세요" → English response about staging classification
+**Korean Input (responds in Korean):**
+- "BCG 치료의 부작용은 무엇인가요?" → Korean response about BCG side effects
+- "방광암의 재발 위험 요인에 대해 알려주세요" → Korean response about recurrence risk factors
+- "TURBT 수술 후 관리 방법은?" → Korean response about post-TURBT management
+- "방광암 병기 분류에 대해 설명해주세요" → Korean response about staging classification
 
-**Input Examples (English):**
+**English Input (responds in English):**
 - "What are the indications for BCG therapy?"
 - "How is NMIBC risk stratification performed?"
 - "What are the surveillance protocols for bladder cancer?"
@@ -155,7 +157,7 @@ DR_BLADDER_CLI/
 │   └── dr-bladder.js          # CLI entry point
 ├── python/
 │   ├── cli.py                 # Python CLI main
-│   ├── bladder_agent.py       # Core AI agent
+│   ├── bladder_agent.py       # Core AI agent with vector storage
 │   ├── config.py              # Configuration management
 │   ├── utils.py               # Utility functions
 │   ├── requirements.txt       # Python dependencies
@@ -178,12 +180,32 @@ DR_BLADDER_CLI/
 |---|---|
 | `bin/dr-bladder.js` | **CLI Entry Point** - Starting point for all commands |
 | `python/cli.py` | **Python CLI Main** - Handles actual AI functionality |
-| `python/bladder_agent.py` | **AI Agent Core** - RAG + Ollama integration |
+| `python/bladder_agent.py` | **AI Agent Core** - RAG + Ollama integration with vector storage |
 | `python/config.py` | **Configuration Management** - Manages all settings |
 | `python/utils.py` | **Utilities** - System checks, logging, etc. |
 | `src/install.js` | **Automatic Installation** - Runs automatically on npm install |
 | `src/init.js` | **System Initialization** - Ollama and model installation |
 | `src/test.js` | **Comprehensive Testing** - Full system verification |
+
+## Technical Improvements
+
+### Recent Updates
+
+1. **Language Detection**: Automatically detects input language (Korean/English) and responds accordingly
+2. **UTF-8 Encoding**: Unified UTF-8 encoding handling across all operating systems
+3. **Windows Compatibility**: Memory-based vector storage for improved Windows performance
+4. **Vector Storage**: Replaced ChromaDB with simple in-memory vector storage for better reliability
+5. **Encoding Safety**: Enhanced text processing with safer encoding/decoding methods
+6. **Error Handling**: Improved error messages without emoji characters
+
+### Vector Storage System
+
+The system now uses a simple in-memory vector storage instead of ChromaDB for better cross-platform compatibility:
+
+- **Memory-based**: All vectors stored in memory for faster access
+- **Cosine Similarity**: Direct cosine similarity calculation for document retrieval
+- **Windows-friendly**: Eliminates file system compatibility issues
+- **Efficient**: Reduced memory usage and faster processing
 
 ## Troubleshooting
 
@@ -255,12 +277,16 @@ DR_BLADDER_CLI/
    - Reduce `batch_size` value in configuration file
    - Switch to CPU usage (saves GPU memory)
 
+5. **Encoding issues (Windows)**
+   - System now automatically handles UTF-8 encoding
+   - Windows console is set to UTF-8 mode automatically
+
 ## Tech Stack
 
 ### Core Technologies
 - **Ollama + Qwen2.5-1.5B**: Enhanced local AI model execution with progress tracking
 - **RAG (Retrieval-Augmented Generation)**: Document-based answer generation
-- **ChromaDB**: High-performance vector database
+- **In-memory Vector Storage**: Simple and efficient vector storage system
 - **SentenceTransformers**: Multilingual text embedding with improved encoding handling
 
 ### Development Environment
@@ -274,6 +300,7 @@ DR_BLADDER_CLI/
 - **psutil**: System monitoring
 - **tqdm**: Progress display
 - **argparse**: CLI interface
+- **numpy**: Vector calculations
 
 ## License
 

@@ -101,43 +101,62 @@ class BladderCancerAgent:
         ]
 
     def _setup_encoding(self):
-        """인코딩 설정"""
+        """UTF-8 인코딩 통일 설정"""
         try:
             import locale
             import sys
             
-            # 로케일 설정
-            if os.name == 'nt':  # Windows
+            # 환경 변수를 UTF-8로 통일
+            os.environ['PYTHONIOENCODING'] = 'utf-8'
+            os.environ['LANG'] = 'en_US.UTF-8'
+            os.environ['LC_ALL'] = 'en_US.UTF-8'
+            
+            # Windows에서 콘솔 인코딩 설정
+            if os.name == 'nt':
                 try:
-                    locale.setlocale(locale.LC_ALL, 'Korean_Korea.utf8')
-                except:
+                    import codecs
+                    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+                    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+                    # Windows 콘솔 UTF-8 모드 활성화
+                    os.system('chcp 65001 > nul')
+                except Exception as e:
+                    self.logger.warning(f"Windows 콘솔 인코딩 설정 실패: {e}")
+            
+            # Python 스트림 인코딩 설정
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8', errors='ignore')
+            if hasattr(sys.stderr, 'reconfigure'):
+                sys.stderr.reconfigure(encoding='utf-8', errors='ignore')
+            if hasattr(sys.stdin, 'reconfigure'):
+                sys.stdin.reconfigure(encoding='utf-8', errors='ignore')
+            
+            # 로케일 설정 (UTF-8 우선)
+            locale_candidates = [
+                'en_US.UTF-8',
+                'C.UTF-8',
+                'ko_KR.UTF-8',
+                'Korean_Korea.utf8' if os.name == 'nt' else None
+            ]
+            
+            for loc in locale_candidates:
+                if loc:
                     try:
-                        locale.setlocale(locale.LC_ALL, 'ko_KR.utf8')
+                        locale.setlocale(locale.LC_ALL, loc)
+                        self.logger.info(f"로케일 설정 성공: {loc}")
+                        break
                     except:
-                        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
-            else:  # Linux/macOS
-                try:
-                    locale.setlocale(locale.LC_ALL, 'ko_KR.utf8')
-                except:
-                    try:
-                        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
-                    except:
-                        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+                        continue
+                        
         except Exception as e:
-            self.logger.warning(f"로케일 설정 실패: {e}")
+            self.logger.warning(f"인코딩 설정 중 오류: {e}")
         
-        # 환경 변수 설정
-        os.environ['PYTHONIOENCODING'] = 'utf-8'
-        os.environ['LANG'] = 'en_US.UTF-8'
-        os.environ['LC_ALL'] = 'en_US.UTF-8'
-        
-        # Python 스트림 인코딩 설정
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8')
-        if hasattr(sys.stderr, 'reconfigure'):
-            sys.stderr.reconfigure(encoding='utf-8')
-        if hasattr(sys.stdin, 'reconfigure'):
-            sys.stdin.reconfigure(encoding='utf-8')
+        # 기본 인코딩 확인
+        try:
+            import sys
+            self.logger.info(f"시스템 기본 인코딩: {sys.getdefaultencoding()}")
+            self.logger.info(f"파일 시스템 인코딩: {sys.getfilesystemencoding()}")
+        except:
+            pass
 
     def initialize(self) -> bool:
         """
@@ -362,49 +381,49 @@ class BladderCancerAgent:
         """PDF 로드 및 벡터화"""
         try:
             self.logger.info("PDF 로드 및 벡터화 시작...")
-            print("📄 PDF 문서 처리를 시작합니다...")
+            print("PDF 문서 처리를 시작합니다...")
             
             # PDF 파일 경로
             pdf_path = Path(self.config.pdf_path)
             if not pdf_path.exists():
                 self.logger.error(f"PDF 파일이 없습니다: {pdf_path}")
-                print(f"❌ PDF 파일을 찾을 수 없습니다: {pdf_path}")
+                print(f"ERROR: PDF 파일을 찾을 수 없습니다: {pdf_path}")
                 return False
             
-            print(f"📖 PDF 파일 크기: {pdf_path.stat().st_size / (1024*1024):.1f}MB")
+            print(f"PDF 파일 크기: {pdf_path.stat().st_size / (1024*1024):.1f}MB")
             
             # PDF 텍스트 추출
-            print("🔍 PDF에서 텍스트 추출 중...")
+            print("PDF에서 텍스트 추출 중...")
             documents = self._extract_pdf_text(pdf_path)
             if not documents:
                 self.logger.error("PDF에서 텍스트 추출 실패")
-                print("❌ PDF에서 텍스트 추출에 실패했습니다.")
+                print("ERROR: PDF에서 텍스트 추출에 실패했습니다.")
                 return False
             
-            print(f"✅ PDF 텍스트 추출 완료: {len(documents)}개 페이지")
+            print(f"PDF 텍스트 추출 완료: {len(documents)}개 페이지")
             
             # 방광암 관련 문서만 필터링
-            print("🔍 방광암 관련 문서 필터링 중...")
+            print("방광암 관련 문서 필터링 중...")
             filtered_docs = self._filter_relevant_documents(documents)
             if not filtered_docs:
                 self.logger.error("방광암 관련 문서가 없습니다")
-                print("❌ 방광암 관련 문서를 찾을 수 없습니다.")
+                print("ERROR: 방광암 관련 문서를 찾을 수 없습니다.")
                 return False
             
-            print(f"✅ 관련 문서 필터링 완료: {len(filtered_docs)}개 문서")
+            print(f"관련 문서 필터링 완료: {len(filtered_docs)}개 문서")
             
-            # 벡터화 및 ChromaDB에 저장
-            print("🧠 문서 벡터화 및 데이터베이스 저장 중...")
+            # 벡터화 및 데이터베이스 저장
+            print("문서 벡터화 및 데이터베이스 저장 중...")
             self._vectorize_and_store(filtered_docs)
             
             self.pdf_loaded = True
             self.logger.info(f"PDF 벡터화 완료: {len(filtered_docs)}개 문서")
-            print("✅ PDF 벡터화가 완료되었습니다!")
+            print("PDF 벡터화가 완료되었습니다!")
             return True
             
         except Exception as e:
             self.logger.error(f"PDF 로드 및 벡터화 실패: {str(e)}")
-            print(f"❌ PDF 처리 중 오류가 발생했습니다: {str(e)}")
+            print(f"ERROR: PDF 처리 중 오류가 발생했습니다: {str(e)}")
             return False
 
     def _extract_pdf_text(self, pdf_path: Path) -> List[str]:
@@ -416,7 +435,7 @@ class BladderCancerAgent:
                 pdf_reader = PyPDF2.PdfReader(file)
                 
                 total_pages = len(pdf_reader.pages)
-                print(f"📄 총 {total_pages}개 페이지 처리 시작...")
+                print(f"총 {total_pages}개 페이지 처리 시작...")
                 
                 for page_num in tqdm(range(total_pages), desc="페이지 처리"):
                     try:
@@ -446,13 +465,13 @@ class BladderCancerAgent:
                         self.logger.warning(f"페이지 {page_num} 처리 실패, 건너뜀: {e}")
                         continue
                 
-                print(f"📄 페이지 처리 완료: {len(documents)}개 문서 추출")
+                print(f"페이지 처리 완료: {len(documents)}개 문서 추출")
             
             return documents
             
         except Exception as e:
             self.logger.error(f"PDF 텍스트 추출 실패: {str(e)}")
-            print(f"❌ PDF 텍스트 추출 중 오류: {str(e)}")
+            print(f"ERROR: PDF 텍스트 추출 중 오류: {str(e)}")
             return []
 
     def _clean_text(self, text: str) -> str:
@@ -522,7 +541,7 @@ class BladderCancerAgent:
                     # 메모리 사용량 확인
                     memory_percent = psutil.virtual_memory().percent
                     if memory_percent > 70:
-                        print(f"⚠️  메모리 사용량이 높습니다 ({memory_percent:.1f}%). 배치 크기를 줄입니다.")
+                        print(f"WARNING: 메모리 사용량이 높습니다 ({memory_percent:.1f}%). 배치 크기를 줄입니다.")
                         batch_size = max(1, batch_size // 2)
                         batch = documents[i:i+batch_size]
                     
@@ -604,7 +623,7 @@ class BladderCancerAgent:
                     
                 except MemoryError as e:
                     self.logger.error(f"메모리 부족 오류 (배치 {batch_num}): {str(e)}")
-                    print(f"❌ 메모리 부족으로 인해 벡터화에 실패했습니다. 배치 크기를 줄여서 다시 시도해주세요.")
+                    print(f"ERROR: 메모리 부족으로 인해 벡터화에 실패했습니다. 배치 크기를 줄여서 다시 시도해주세요.")
                     # 배치 크기를 더 줄여서 재시도
                     batch_size = max(1, batch_size // 2)
                     if batch_size == 1:
@@ -612,13 +631,13 @@ class BladderCancerAgent:
                     continue
                 except Exception as e:
                     self.logger.error(f"배치 {batch_num} 처리 중 오류: {str(e)}")
-                    print(f"❌ 배치 {batch_num} 처리 중 오류가 발생했습니다: {str(e)}")
+                    print(f"ERROR: 배치 {batch_num} 처리 중 오류가 발생했습니다: {str(e)}")
                     # 개별 배치 오류는 건너뛰고 계속 진행
                     continue
                     
         except Exception as e:
             self.logger.error(f"벡터화 및 저장 실패: {str(e)}")
-            print(f"❌ 문서 벡터화 중 오류가 발생했습니다: {str(e)}")
+            print(f"ERROR: 문서 벡터화 중 오류가 발생했습니다: {str(e)}")
             raise
 
     def ask_question(self, question: str) -> Dict[str, Any]:
@@ -827,14 +846,35 @@ class BladderCancerAgent:
 
     def _create_prompt(self, question: str, context: str) -> str:
         """프롬프트 생성"""
-        prompt = f"""You are a medical AI that answers questions based solely on EAU (European Association of Urology) bladder cancer guidelines.
+        # 질문 언어 감지
+        is_korean = self._is_korean_question(question)
+        
+        if is_korean:
+            prompt = f"""당신은 EAU (European Association of Urology) 방광암 가이드라인에 기반하여 질문에 답변하는 의료 AI입니다.
+
+중요한 지시사항:
+- 아래 제공된 가이드라인 문서에 명시적으로 기술된 내용만을 바탕으로 답변하세요
+- 문서에서 정보를 찾을 수 없으면 "제공된 가이드라인에서 해당 정보를 찾을 수 없습니다" 또는 "모르겠습니다"라고 답변하세요
+- 외부 지식이나 추측에 기반하여 답변하지 마세요
+- 문서에 없는 일반적인 의료 조언을 제공하지 마세요
+- 한국어로 질문하면 한국어로 답변하세요
+- 정확하고 구체적으로 답변하며, 가능하면 특정 섹션을 인용하세요
+
+EAU 가이드라인 컨텍스트:
+{context}
+
+질문: {question}
+
+위의 가이드라인 문서만을 바탕으로 한국어로 답변하세요:"""
+        else:
+            prompt = f"""You are a medical AI that answers questions based solely on EAU (European Association of Urology) bladder cancer guidelines.
 
 IMPORTANT INSTRUCTIONS:
 - Answer ONLY based on the content explicitly stated in the guideline documents provided below
 - If information is not found in the documents, respond with "The requested information is not available in the provided guidelines" or "I don't know"
 - Do not answer based on external knowledge or speculation
 - Do not provide general medical advice not found in the documents
-- ALWAYS respond in English, regardless of the language of the question
+- Respond in English for English questions
 - Be precise and cite specific sections when possible
 
 EAU Guidelines Context:
@@ -843,7 +883,24 @@ EAU Guidelines Context:
 Question: {question}
 
 Answer based solely on the above guideline documents (respond in English):"""
+        
         return prompt
+        
+    def _is_korean_question(self, question: str) -> bool:
+        """질문이 한국어인지 판단"""
+        korean_chars = 0
+        total_chars = 0
+        
+        for char in question:
+            if char.isalpha():
+                total_chars += 1
+                if '\uac00' <= char <= '\ud7a3':  # 한글 유니코드 범위
+                    korean_chars += 1
+        
+        if total_chars == 0:
+            return False
+        
+        return korean_chars / total_chars > 0.3  # 30% 이상이 한글이면 한국어 질문
 
     def get_status(self) -> Dict[str, Any]:
         """에이전트 상태 정보"""

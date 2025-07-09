@@ -102,23 +102,23 @@ def check_system_requirements() -> bool:
         for package in required_packages:
             try:
                 __import__(package)
-                print(f"{Fore.GREEN}✅ {package}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}OK {package}{Style.RESET_ALL}")
             except ImportError:
                 missing_packages.append(package)
                 print(f"{Fore.RED}{package} (미설치){Style.RESET_ALL}")
         
         if missing_packages:
             print(f"{Fore.RED}다음 패키지를 설치해주세요: {', '.join(missing_packages)}{Style.RESET_ALL}")
-            print(f"{Fore.YELLOW}💡 설치 명령어: pip install {' '.join(missing_packages)}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}설치 명령어: pip install {' '.join(missing_packages)}{Style.RESET_ALL}")
             return False
         
         # Ollama 설치 확인
         if not check_ollama_installation():
             print(f"{Fore.RED}Ollama가 설치되지 않았습니다.{Style.RESET_ALL}")
-            print(f"{Fore.YELLOW}💡 설치 방법: https://ollama.ai{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}설치 방법: https://ollama.ai{Style.RESET_ALL}")
             return False
         
-        print(f"{Fore.GREEN}✅ 모든 시스템 요구사항을 만족합니다.{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}모든 시스템 요구사항을 만족합니다.{Style.RESET_ALL}")
         return True
         
     except Exception as e:
@@ -138,7 +138,7 @@ def check_ollama_installation() -> bool:
                               capture_output=True, text=True, timeout=5)
         
         if result.returncode == 0:
-            print(f"{Fore.GREEN}✅ Ollama 설치됨: {result.stdout.strip()}{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}Ollama 설치됨: {result.stdout.strip()}{Style.RESET_ALL}")
             return True
         else:
             return False
@@ -493,20 +493,20 @@ def benchmark_system() -> Dict[str, Any]:
 
 def print_system_status():
     """시스템 상태 출력"""
-    print(f"\n{Fore.CYAN}📊 시스템 상태{Style.RESET_ALL}")
+    print(f"\n{Fore.CYAN}시스템 상태{Style.RESET_ALL}")
     print("=" * 50)
     
     # 시스템 정보
     info = get_system_info()
     
-    print(f"{Fore.YELLOW}🖥️  시스템 정보:{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}시스템 정보:{Style.RESET_ALL}")
     print(f"  • OS: {info.get('os', 'Unknown')} ({info.get('platform', 'Unknown')})")
     print(f"  • Python: {info.get('python_version', 'Unknown')}")
     print(f"  • 아키텍처: {info.get('architecture', 'Unknown')}")
     
     # CPU 정보
     cpu = info.get('cpu', {})
-    print(f"\n{Fore.YELLOW}🔧 CPU 정보:{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}CPU 정보:{Style.RESET_ALL}")
     print(f"  • 코어 수: {cpu.get('count', 'Unknown')}")
     print(f"  • 사용률: {cpu.get('percent', 0):.1f}%")
     if cpu.get('frequency'):
@@ -514,14 +514,14 @@ def print_system_status():
     
     # 메모리 정보
     memory = info.get('memory', {})
-    print(f"\n{Fore.YELLOW}💾 메모리 정보:{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}메모리 정보:{Style.RESET_ALL}")
     print(f"  • 전체: {format_bytes(memory.get('total', 0))}")
     print(f"  • 사용 중: {format_bytes(memory.get('used', 0))} ({memory.get('percent', 0):.1f}%)")
     print(f"  • 사용 가능: {format_bytes(memory.get('available', 0))}")
     
     # GPU 정보
     gpu = info.get('gpu', {})
-    print(f"\n{Fore.YELLOW}🎮 GPU 정보:{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}GPU 정보:{Style.RESET_ALL}")
     if gpu.get('available'):
         print(f"  • GPU 개수: {gpu.get('count', 0)}")
         for i, device in enumerate(gpu.get('devices', [])):
@@ -533,14 +533,14 @@ def print_system_status():
     
     # 디스크 정보
     disk = info.get('disk', {})
-    print(f"\n{Fore.YELLOW}💿 디스크 정보:{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}디스크 정보:{Style.RESET_ALL}")
     print(f"  • 전체: {format_bytes(disk.get('total', 0))}")
     print(f"  • 사용 중: {format_bytes(disk.get('used', 0))} ({disk.get('percent', 0):.1f}%)")
     print(f"  • 사용 가능: {format_bytes(disk.get('free', 0))}")
     
     # Ollama 연결 상태
     ollama_status = test_ollama_connection()
-    print(f"\n{Fore.YELLOW}🤖 Ollama 상태:{Style.RESET_ALL}")
+    print(f"\n{Fore.YELLOW}Ollama 상태:{Style.RESET_ALL}")
     if ollama_status.get('connected'):
         print(f"  • 상태: {Fore.GREEN}연결됨{Style.RESET_ALL}")
         print(f"  • 모델 수: {ollama_status.get('model_count', 0)}")
