@@ -11,14 +11,15 @@ from pathlib import Path
 import unicodedata
 import re
 import time
+import json
+import pickle
+import numpy as np
 
 # 필수 라이브러리
 import ollama
 import torch
-import chromadb
 import PyPDF2
 from sentence_transformers import SentenceTransformer
-from chromadb.utils import embedding_functions
 from tqdm import tqdm
 import psutil
 
@@ -39,8 +40,7 @@ class BladderCancerAgent:
         self.is_initialized = False
         self.ollama_client = None
         self.embedding_model = None
-        self.chroma_client = None
-        self.collection = None
+        self.vector_store = None  # ChromaDB 대신 간단한 벡터 저장소
         self.pdf_loaded = False
         
         # 캐시 디렉토리 생성
@@ -157,8 +157,8 @@ class BladderCancerAgent:
             if not self._init_embedding_model():
                 return False
             
-            # 3. ChromaDB 초기화
-            if not self._init_chromadb():
+            # 3. 벡터 저장소 초기화
+            if not self._init_vector_store():
                 return False
             
             # 4. PDF 로드 및 벡터화
@@ -338,53 +338,24 @@ class BladderCancerAgent:
             self.logger.error(f"임베딩 모델 초기화 실패: {str(e)}")
             return False
 
-    def _init_chromadb(self) -> bool:
-        """ChromaDB 초기화 (Windows 호환성 개선)"""
+    def _init_vector_store(self) -> bool:
+        """간단한 벡터 저장소 초기화"""
         try:
-            self.logger.info("ChromaDB 초기화 중...")
+            self.logger.info("벡터 저장소 초기화 중...")
+            print("간단한 벡터 저장소 사용 (ChromaDB 대신)")
             
-            # Windows에서는 메모리 기반 ChromaDB 사용
-            if os.name == 'nt':
-                print("Windows 환경: 메모리 기반 데이터베이스 사용")
-                import chromadb
-                self.chroma_client = chromadb.Client()
-                
-                # 컬렉션 생성
-                collection_name = "bladder_cancer_guidelines"
-                try:
-                    self.collection = self.chroma_client.create_collection(
-                        name=collection_name
-                    )
-                except Exception:
-                    # 이미 존재하는 경우 삭제 후 재생성
-                    try:
-                        self.chroma_client.delete_collection(collection_name)
-                    except:
-                        pass
-                    self.collection = self.chroma_client.create_collection(
-                        name=collection_name
-                    )
-            else:
-                # Linux/macOS에서는 영구 저장소 사용
-                self.chroma_client = chromadb.PersistentClient(
-                    path=str(Path(self.config.cache_dir) / "chroma_db")
-                )
-                
-                collection_name = "bladder_cancer_guidelines"
-                try:
-                    self.chroma_client.delete_collection(collection_name)
-                except:
-                    pass
-                
-                self.collection = self.chroma_client.create_collection(
-                    name=collection_name
-                )
+            # 간단한 벡터 저장소 구조
+            self.vector_store = {
+                'embeddings': [],
+                'documents': [],
+                'ids': []
+            }
             
-            self.logger.info("ChromaDB 초기화 완료")
+            self.logger.info("벡터 저장소 초기화 완료")
             return True
             
         except Exception as e:
-            self.logger.error(f"ChromaDB 초기화 실패: {str(e)}")
+            self.logger.error(f"벡터 저장소 초기화 실패: {str(e)}")
             return False
 
     def _load_pdf_and_vectorize(self) -> bool:
@@ -582,8 +553,8 @@ class BladderCancerAgent:
                     elapsed_time = time.time() - start_time
                     print(f"배치 {batch_num} 임베딩 완료 ({elapsed_time:.2f}초)")
                     
-                    # ChromaDB에 저장
-                    print(f"배치 {batch_num} 데이터베이스 저장 중...")
+                    # 간단한 벡터 저장소에 저장
+                    print(f"배치 {batch_num} 벡터 저장소에 저장 중...")
                     ids = [f"doc_{i+j}" for j in range(len(batch))]
                     
                     # 임베딩을 numpy array로 변환 후 리스트로 변환
@@ -595,90 +566,36 @@ class BladderCancerAgent:
                     else:
                         embeddings_list = embeddings.tolist()
                     
-                    # Windows 환경에서 더 안전한 저장 방식
-                    if os.name == 'nt':
-                        # Windows: 개별 저장만 사용
-                        print(f"  Windows 환경: 개별 저장 방식 사용")
-                        success_count = 0
-                        for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
-                            try:
-                                print(f"  문서 {j+1}/{len(batch)} 저장 중...")
-                                
-                                # 문서 내용 정리 (Windows에서 더 엄격하게)
-                                cleaned_doc = self._safe_encode_text(doc)
-                                if len(cleaned_doc) > 4000:  # Windows에서는 더 짧게
-                                    cleaned_doc = cleaned_doc[:4000] + "..."
-                                
-                                # 임베딩 검증
-                                if not isinstance(embedding, list) or len(embedding) == 0:
-                                    print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
-                                    continue
-                                
-                                # 저장 시도 (Windows에서 더 신중하게)
-                                import gc
-                                self.collection.add(
-                                    embeddings=[embedding],
-                                    documents=[cleaned_doc],
-                                    ids=[doc_id]
-                                )
-                                print(f"  문서 {j+1} 저장 완료")
-                                success_count += 1
-                                
-                                # Windows에서 가비지 컬렉션
-                                if j % 2 == 0:
-                                    gc.collect()
-                                
-                            except Exception as doc_error:
-                                print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
-                                self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
-                                continue
-                        
-                        print(f"  개별 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
-                    else:
-                        # Linux/macOS: 일괄 저장 시도 후 개별 저장
+                    # 간단한 벡터 저장소에 저장
+                    success_count = 0
+                    for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
                         try:
-                            print(f"  일괄 저장 시도 중...")
-                            self.collection.add(
-                                embeddings=embeddings_list,
-                                documents=batch,
-                                ids=ids
-                            )
-                            print(f"  일괄 저장 완료 ({len(batch)}개 문서)")
-                        except Exception as bulk_error:
-                            print(f"  일괄 저장 실패: {str(bulk_error)}")
-                            print(f"  개별 저장으로 전환...")
+                            print(f"  문서 {j+1}/{len(batch)} 저장 중...")
                             
-                            # 개별 저장
-                            success_count = 0
-                            for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
-                                try:
-                                    print(f"  문서 {j+1}/{len(batch)} 저장 중...")
-                                    
-                                    # 문서 내용 정리
-                                    cleaned_doc = self._safe_encode_text(doc)
-                                    if len(cleaned_doc) > 8000:
-                                        cleaned_doc = cleaned_doc[:8000] + "..."
-                                    
-                                    # 임베딩 검증
-                                    if not isinstance(embedding, list) or len(embedding) == 0:
-                                        print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
-                                        continue
-                                    
-                                    # 저장 시도
-                                    self.collection.add(
-                                        embeddings=[embedding],
-                                        documents=[cleaned_doc],
-                                        ids=[doc_id]
-                                    )
-                                    print(f"  문서 {j+1} 저장 완료")
-                                    success_count += 1
-                                    
-                                except Exception as doc_error:
-                                    print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
-                                    self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
-                                    continue
+                            # 문서 내용 정리
+                            cleaned_doc = self._safe_encode_text(doc)
+                            if len(cleaned_doc) > 4000:
+                                cleaned_doc = cleaned_doc[:4000] + "..."
                             
-                            print(f"  개별 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
+                            # 임베딩 검증
+                            if not isinstance(embedding, list) or len(embedding) == 0:
+                                print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
+                                continue
+                            
+                            # 간단한 벡터 저장소에 저장
+                            self.vector_store['embeddings'].append(embedding)
+                            self.vector_store['documents'].append(cleaned_doc)
+                            self.vector_store['ids'].append(doc_id)
+                            
+                            print(f"  문서 {j+1} 저장 완료")
+                            success_count += 1
+                            
+                        except Exception as doc_error:
+                            print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
+                            self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
+                            continue
+                    
+                    print(f"  벡터 저장소 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
                     
                     print(f"배치 {batch_num} 완료")
                     
@@ -805,24 +722,45 @@ class BladderCancerAgent:
         return expanded
 
     def _search_relevant_documents(self, query: str) -> List[Dict[str, Any]]:
-        """관련 문서 검색"""
+        """관련 문서 검색 (간단한 벡터 저장소 사용)"""
         try:
             # 쿼리 임베딩 생성
             query_embedding = self.embedding_model.encode([query])
+            query_vector = query_embedding[0] if hasattr(query_embedding, 'shape') else query_embedding
             
-            # ChromaDB에서 검색
-            results = self.collection.query(
-                query_embeddings=query_embedding.tolist(),
-                n_results=self.config.top_k
-            )
+            # 코사인 유사도 계산
+            similarities = []
+            for i, doc_embedding in enumerate(self.vector_store['embeddings']):
+                # 코사인 유사도 계산
+                dot_product = np.dot(query_vector, doc_embedding)
+                norm_query = np.linalg.norm(query_vector)
+                norm_doc = np.linalg.norm(doc_embedding)
+                
+                if norm_query > 0 and norm_doc > 0:
+                    similarity = dot_product / (norm_query * norm_doc)
+                else:
+                    similarity = 0
+                
+                similarities.append({
+                    "index": i,
+                    "similarity": similarity,
+                    "document": self.vector_store['documents'][i],
+                    "id": self.vector_store['ids'][i]
+                })
+            
+            # 유사도 순으로 정렬
+            similarities.sort(key=lambda x: x['similarity'], reverse=True)
+            
+            # 상위 결과 선택
+            top_results = similarities[:self.config.top_k]
             
             # 결과 정리
             relevant_docs = []
-            for i, doc in enumerate(results['documents'][0]):
+            for result in top_results:
                 relevant_docs.append({
-                    "document": doc,
-                    "distance": results['distances'][0][i],
-                    "id": results['ids'][0][i]
+                    "document": result['document'],
+                    "distance": 1 - result['similarity'],  # 거리는 1 - 유사도
+                    "id": result['id']
                 })
             
             return relevant_docs
@@ -929,10 +867,10 @@ Answer based solely on the above guideline documents (respond in English):"""
                 except:
                     pass
             
-            # 벡터 DB 상태 확인
-            if self.collection:
+            # 벡터 저장소 상태 확인
+            if self.vector_store:
                 try:
-                    count = self.collection.count()
+                    count = len(self.vector_store['documents'])
                     status["vectordb_ready"] = count > 0
                     status["document_count"] = count
                 except:
@@ -950,11 +888,8 @@ Answer based solely on the above guideline documents (respond in English):"""
             if hasattr(self, 'embedding_model'):
                 del self.embedding_model
             
-            if hasattr(self, 'chroma_client'):
-                del self.chroma_client
-            
-            if hasattr(self, 'collection'):
-                del self.collection
+            if hasattr(self, 'vector_store'):
+                del self.vector_store
             
             # GPU 메모리 정리
             if torch.cuda.is_available():
