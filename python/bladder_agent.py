@@ -357,10 +357,9 @@ class BladderCancerAgent:
             except:
                 pass
             
-            # 새 컬렉션 생성
+            # 새 컬렉션 생성 (임베딩 함수 없이 생성)
             self.collection = self.chroma_client.create_collection(
-                name=collection_name,
-                embedding_function=embedding_functions.DefaultEmbeddingFunction()
+                name=collection_name
             )
             
             self.logger.info("ChromaDB 초기화 완료")
@@ -568,11 +567,30 @@ class BladderCancerAgent:
                     # ChromaDB에 저장
                     print(f"배치 {batch_num} 데이터베이스 저장 중...")
                     ids = [f"doc_{i+j}" for j in range(len(batch))]
-                    self.collection.add(
-                        embeddings=embeddings.tolist(),
-                        documents=batch,
-                        ids=ids
-                    )
+                    
+                    # 임베딩을 numpy array로 변환 후 리스트로 변환
+                    import numpy as np
+                    if hasattr(embeddings, 'numpy'):
+                        embeddings_list = embeddings.numpy().tolist()
+                    elif isinstance(embeddings, np.ndarray):
+                        embeddings_list = embeddings.tolist()
+                    else:
+                        embeddings_list = embeddings.tolist()
+                    
+                    # 각 문서를 개별적으로 추가 (일괄 추가가 문제가 될 수 있음)
+                    for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
+                        try:
+                            print(f"  문서 {j+1}/{len(batch)} 저장 중...")
+                            self.collection.add(
+                                embeddings=[embedding],
+                                documents=[doc],
+                                ids=[doc_id]
+                            )
+                            print(f"  문서 {j+1} 저장 완료")
+                        except Exception as doc_error:
+                            print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
+                            self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
+                            continue
                     
                     print(f"배치 {batch_num} 완료")
                     
