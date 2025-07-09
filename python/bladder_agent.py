@@ -242,7 +242,9 @@ class BladderCancerAgent:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
+                encoding='utf-8',
+                errors='replace'
             )
             
             # 진행상황 추적 변수
