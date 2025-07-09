@@ -852,46 +852,50 @@ class BladderCancerAgent:
         try:
             import re
             
-            # 디버깅용 로그
-            self.logger.debug(f"포맷팅 전 답변: {repr(answer)}")
+            # 원본 답변 저장 (디버깅용)
+            original_answer = answer
             
             # 먼저 기존 답변에서 불필요한 공백 정리
             answer = answer.strip()
             
-            # 더 강력한 패턴으로 처리
-            # 콜론이나 마침표 뒤에 숫자가 바로 오는 경우
-            answer = re.sub(r'([:\.])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            # 가장 직접적인 패턴부터 처리
+            # 1. 콜론 뒤에 바로 숫자가 오는 경우: "guidelines:1." -> "guidelines:\n1."
+            answer = re.sub(r':(\d+)\.', r':\n\1.', answer)
             
-            # 한국어 어미 뒤에 숫자가 오는 경우 (더 포괄적으로)
-            answer = re.sub(r'(습니다|됩니다|입니다|있습니다|합니다|같습니다)\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            # 2. 마침표 뒤에 바로 숫자가 오는 경우: "factor.2." -> "factor.\n2."
+            answer = re.sub(r'\.(\d+)\.', r'.\n\1.', answer)
             
-            # 한글 문자 뒤에 숫자가 오는 경우
-            answer = re.sub(r'([가-힣])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            # 3. 한국어 어미 뒤에 숫자가 오는 경우
+            answer = re.sub(r'(습니다|됩니다|입니다|있습니다|합니다|같습니다)(\d+)\.', r'\1\n\2.', answer)
             
-            # 영어 문자 뒤에 숫자가 오는 경우
-            answer = re.sub(r'([a-zA-Z])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            # 4. 한글 문자 뒤에 바로 숫자가 오는 경우
+            answer = re.sub(r'([가-힣])(\d+)\.', r'\1\n\2.', answer)
             
-            # 괄호 뒤에 숫자가 오는 경우
-            answer = re.sub(r'(\))\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            # 5. 영어 문자 뒤에 바로 숫자가 오는 경우
+            answer = re.sub(r'([a-zA-Z])(\d+)\.', r'\1\n\2.', answer)
             
-            # 이미 줄바꿈된 번호 목록 정리
-            answer = re.sub(r'(\d+)\.\s+([가-힣A-Za-z])', r'\1. \2', answer)
+            # 6. 공백이 있는 경우도 처리
+            answer = re.sub(r'([:\.])\s+(\d+)\.', r'\1\n\2.', answer)
+            answer = re.sub(r'([가-힣a-zA-Z])\s+(\d+)\.', r'\1\n\2.', answer)
             
-            # 번호 앞에 불필요한 공백 제거
-            answer = re.sub(r'\n\s+(\d+\.)', r'\n\1', answer)
+            # 7. 번호 뒤에 공백이 없는 경우 공백 추가
+            answer = re.sub(r'(\n\d+\.)([가-힣A-Za-z])', r'\1 \2', answer)
             
-            # 연속된 줄바꿈 정리
+            # 8. 연속된 줄바꿈 정리
             answer = re.sub(r'\n\s*\n\s*\n+', r'\n\n', answer)
             
-            # 줄 시작에서 번호 패턴 최종 정리
-            answer = re.sub(r'^\s*(\d+)\.\s*([가-힣A-Za-z])', r'\1. \2', answer, flags=re.MULTILINE)
+            # 9. 번호 앞에 불필요한 공백 제거
+            answer = re.sub(r'\n\s+(\d+\.)', r'\n\1', answer)
             
-            # 최종 정리
+            # 10. 최종 정리
             answer = answer.strip()
             
-            # 디버깅용 로그
-            self.logger.debug(f"포맷팅 후 답변: {repr(answer)}")
-            
+            # 변경사항이 있는지 확인
+            if answer != original_answer:
+                self.logger.debug(f"답변 포맷팅이 적용됨")
+            else:
+                self.logger.debug(f"답변 포맷팅 적용되지 않음")
+                
             return answer
             
         except Exception as e:
