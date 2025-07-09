@@ -577,20 +577,50 @@ class BladderCancerAgent:
                     else:
                         embeddings_list = embeddings.tolist()
                     
-                    # 각 문서를 개별적으로 추가 (일괄 추가가 문제가 될 수 있음)
-                    for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
-                        try:
-                            print(f"  문서 {j+1}/{len(batch)} 저장 중...")
-                            self.collection.add(
-                                embeddings=[embedding],
-                                documents=[doc],
-                                ids=[doc_id]
-                            )
-                            print(f"  문서 {j+1} 저장 완료")
-                        except Exception as doc_error:
-                            print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
-                            self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
-                            continue
+                    # ChromaDB 저장 방법 변경 - 일괄 저장으로 다시 시도
+                    try:
+                        print(f"  일괄 저장 시도 중...")
+                        self.collection.add(
+                            embeddings=embeddings_list,
+                            documents=batch,
+                            ids=ids
+                        )
+                        print(f"  일괄 저장 완료 ({len(batch)}개 문서)")
+                    except Exception as bulk_error:
+                        print(f"  일괄 저장 실패: {str(bulk_error)}")
+                        print(f"  개별 저장으로 전환...")
+                        
+                        # 개별 저장 (간단한 방법)
+                        success_count = 0
+                        for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
+                            try:
+                                print(f"  문서 {j+1}/{len(batch)} 저장 중...")
+                                
+                                # 문서 내용 정리
+                                cleaned_doc = self._safe_encode_text(doc)
+                                if len(cleaned_doc) > 8000:  # 길이 제한
+                                    cleaned_doc = cleaned_doc[:8000] + "..."
+                                
+                                # 임베딩 검증
+                                if not isinstance(embedding, list) or len(embedding) == 0:
+                                    print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
+                                    continue
+                                
+                                # 저장 시도
+                                self.collection.add(
+                                    embeddings=[embedding],
+                                    documents=[cleaned_doc],
+                                    ids=[doc_id]
+                                )
+                                print(f"  문서 {j+1} 저장 완료")
+                                success_count += 1
+                                
+                            except Exception as doc_error:
+                                print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
+                                self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
+                                continue
+                        
+                        print(f"  개별 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
                     
                     print(f"배치 {batch_num} 완료")
                     
