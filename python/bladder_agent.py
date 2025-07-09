@@ -374,34 +374,49 @@ class BladderCancerAgent:
         """PDF 로드 및 벡터화"""
         try:
             self.logger.info("PDF 로드 및 벡터화 시작...")
+            print("📄 PDF 문서 처리를 시작합니다...")
             
             # PDF 파일 경로
             pdf_path = Path(self.config.pdf_path)
             if not pdf_path.exists():
                 self.logger.error(f"PDF 파일이 없습니다: {pdf_path}")
+                print(f"❌ PDF 파일을 찾을 수 없습니다: {pdf_path}")
                 return False
             
+            print(f"📖 PDF 파일 크기: {pdf_path.stat().st_size / (1024*1024):.1f}MB")
+            
             # PDF 텍스트 추출
+            print("🔍 PDF에서 텍스트 추출 중...")
             documents = self._extract_pdf_text(pdf_path)
             if not documents:
                 self.logger.error("PDF에서 텍스트 추출 실패")
+                print("❌ PDF에서 텍스트 추출에 실패했습니다.")
                 return False
             
+            print(f"✅ PDF 텍스트 추출 완료: {len(documents)}개 페이지")
+            
             # 방광암 관련 문서만 필터링
+            print("🔍 방광암 관련 문서 필터링 중...")
             filtered_docs = self._filter_relevant_documents(documents)
             if not filtered_docs:
                 self.logger.error("방광암 관련 문서가 없습니다")
+                print("❌ 방광암 관련 문서를 찾을 수 없습니다.")
                 return False
             
+            print(f"✅ 관련 문서 필터링 완료: {len(filtered_docs)}개 문서")
+            
             # 벡터화 및 ChromaDB에 저장
+            print("🧠 문서 벡터화 및 데이터베이스 저장 중...")
             self._vectorize_and_store(filtered_docs)
             
             self.pdf_loaded = True
             self.logger.info(f"PDF 벡터화 완료: {len(filtered_docs)}개 문서")
+            print("✅ PDF 벡터화가 완료되었습니다!")
             return True
             
         except Exception as e:
             self.logger.error(f"PDF 로드 및 벡터화 실패: {str(e)}")
+            print(f"❌ PDF 처리 중 오류가 발생했습니다: {str(e)}")
             return False
 
     def _extract_pdf_text(self, pdf_path: Path) -> List[str]:
@@ -412,7 +427,10 @@ class BladderCancerAgent:
             with open(pdf_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
                 
-                for page_num in range(len(pdf_reader.pages)):
+                total_pages = len(pdf_reader.pages)
+                print(f"📄 총 {total_pages}개 페이지 처리 시작...")
+                
+                for page_num in tqdm(range(total_pages), desc="페이지 처리"):
                     try:
                         page = pdf_reader.pages[page_num]
                         text = page.extract_text()
@@ -439,11 +457,14 @@ class BladderCancerAgent:
                     except Exception as e:
                         self.logger.warning(f"페이지 {page_num} 처리 실패, 건너뜀: {e}")
                         continue
+                
+                print(f"📄 페이지 처리 완료: {len(documents)}개 문서 추출")
             
             return documents
             
         except Exception as e:
             self.logger.error(f"PDF 텍스트 추출 실패: {str(e)}")
+            print(f"❌ PDF 텍스트 추출 중 오류: {str(e)}")
             return []
 
     def _clean_text(self, text: str) -> str:
