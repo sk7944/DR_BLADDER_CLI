@@ -339,28 +339,46 @@ class BladderCancerAgent:
             return False
 
     def _init_chromadb(self) -> bool:
-        """ChromaDB 초기화"""
+        """ChromaDB 초기화 (Windows 호환성 개선)"""
         try:
             self.logger.info("ChromaDB 초기화 중...")
             
-            # ChromaDB 클라이언트 생성
-            self.chroma_client = chromadb.PersistentClient(
-                path=str(Path(self.config.cache_dir) / "chroma_db")
-            )
-            
-            # 컬렉션 생성 또는 가져오기
-            collection_name = "bladder_cancer_guidelines"
-            
-            # 기존 컬렉션이 있으면 삭제 (재생성)
-            try:
-                self.chroma_client.delete_collection(collection_name)
-            except:
-                pass
-            
-            # 새 컬렉션 생성 (임베딩 함수 없이 생성)
-            self.collection = self.chroma_client.create_collection(
-                name=collection_name
-            )
+            # Windows에서는 메모리 기반 ChromaDB 사용
+            if os.name == 'nt':
+                print("Windows 환경: 메모리 기반 데이터베이스 사용")
+                import chromadb
+                self.chroma_client = chromadb.Client()
+                
+                # 컬렉션 생성
+                collection_name = "bladder_cancer_guidelines"
+                try:
+                    self.collection = self.chroma_client.create_collection(
+                        name=collection_name
+                    )
+                except Exception:
+                    # 이미 존재하는 경우 삭제 후 재생성
+                    try:
+                        self.chroma_client.delete_collection(collection_name)
+                    except:
+                        pass
+                    self.collection = self.chroma_client.create_collection(
+                        name=collection_name
+                    )
+            else:
+                # Linux/macOS에서는 영구 저장소 사용
+                self.chroma_client = chromadb.PersistentClient(
+                    path=str(Path(self.config.cache_dir) / "chroma_db")
+                )
+                
+                collection_name = "bladder_cancer_guidelines"
+                try:
+                    self.chroma_client.delete_collection(collection_name)
+                except:
+                    pass
+                
+                self.collection = self.chroma_client.create_collection(
+                    name=collection_name
+                )
             
             self.logger.info("ChromaDB 초기화 완료")
             return True
@@ -577,36 +595,27 @@ class BladderCancerAgent:
                     else:
                         embeddings_list = embeddings.tolist()
                     
-                    # ChromaDB 저장 방법 변경 - 일괄 저장으로 다시 시도
-                    try:
-                        print(f"  일괄 저장 시도 중...")
-                        self.collection.add(
-                            embeddings=embeddings_list,
-                            documents=batch,
-                            ids=ids
-                        )
-                        print(f"  일괄 저장 완료 ({len(batch)}개 문서)")
-                    except Exception as bulk_error:
-                        print(f"  일괄 저장 실패: {str(bulk_error)}")
-                        print(f"  개별 저장으로 전환...")
-                        
-                        # 개별 저장 (간단한 방법)
+                    # Windows 환경에서 더 안전한 저장 방식
+                    if os.name == 'nt':
+                        # Windows: 개별 저장만 사용
+                        print(f"  Windows 환경: 개별 저장 방식 사용")
                         success_count = 0
                         for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
                             try:
                                 print(f"  문서 {j+1}/{len(batch)} 저장 중...")
                                 
-                                # 문서 내용 정리
+                                # 문서 내용 정리 (Windows에서 더 엄격하게)
                                 cleaned_doc = self._safe_encode_text(doc)
-                                if len(cleaned_doc) > 8000:  # 길이 제한
-                                    cleaned_doc = cleaned_doc[:8000] + "..."
+                                if len(cleaned_doc) > 4000:  # Windows에서는 더 짧게
+                                    cleaned_doc = cleaned_doc[:4000] + "..."
                                 
                                 # 임베딩 검증
                                 if not isinstance(embedding, list) or len(embedding) == 0:
                                     print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
                                     continue
                                 
-                                # 저장 시도
+                                # 저장 시도 (Windows에서 더 신중하게)
+                                import gc
                                 self.collection.add(
                                     embeddings=[embedding],
                                     documents=[cleaned_doc],
@@ -615,12 +624,61 @@ class BladderCancerAgent:
                                 print(f"  문서 {j+1} 저장 완료")
                                 success_count += 1
                                 
+                                # Windows에서 가비지 컬렉션
+                                if j % 2 == 0:
+                                    gc.collect()
+                                
                             except Exception as doc_error:
                                 print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
                                 self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
                                 continue
                         
                         print(f"  개별 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
+                    else:
+                        # Linux/macOS: 일괄 저장 시도 후 개별 저장
+                        try:
+                            print(f"  일괄 저장 시도 중...")
+                            self.collection.add(
+                                embeddings=embeddings_list,
+                                documents=batch,
+                                ids=ids
+                            )
+                            print(f"  일괄 저장 완료 ({len(batch)}개 문서)")
+                        except Exception as bulk_error:
+                            print(f"  일괄 저장 실패: {str(bulk_error)}")
+                            print(f"  개별 저장으로 전환...")
+                            
+                            # 개별 저장
+                            success_count = 0
+                            for j, (embedding, doc, doc_id) in enumerate(zip(embeddings_list, batch, ids)):
+                                try:
+                                    print(f"  문서 {j+1}/{len(batch)} 저장 중...")
+                                    
+                                    # 문서 내용 정리
+                                    cleaned_doc = self._safe_encode_text(doc)
+                                    if len(cleaned_doc) > 8000:
+                                        cleaned_doc = cleaned_doc[:8000] + "..."
+                                    
+                                    # 임베딩 검증
+                                    if not isinstance(embedding, list) or len(embedding) == 0:
+                                        print(f"  문서 {j+1} 임베딩 오류, 건너뜀")
+                                        continue
+                                    
+                                    # 저장 시도
+                                    self.collection.add(
+                                        embeddings=[embedding],
+                                        documents=[cleaned_doc],
+                                        ids=[doc_id]
+                                    )
+                                    print(f"  문서 {j+1} 저장 완료")
+                                    success_count += 1
+                                    
+                                except Exception as doc_error:
+                                    print(f"  문서 {j+1} 저장 실패: {str(doc_error)}")
+                                    self.logger.error(f"문서 {doc_id} 저장 실패: {str(doc_error)}")
+                                    continue
+                            
+                            print(f"  개별 저장 완료: {success_count}/{len(batch)}개 문서 저장됨")
                     
                     print(f"배치 {batch_num} 완료")
                     
