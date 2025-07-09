@@ -517,34 +517,56 @@ class BladderCancerAgent:
     def _vectorize_and_store(self, documents: List[str]):
         """문서 벡터화 및 ChromaDB 저장"""
         try:
-            # 배치 크기 설정 (Windows에서는 더 작은 배치 크기 사용)
-            batch_size = self.config.batch_size
+            # 배치 크기 설정 (더 작은 배치로 시작)
+            batch_size = 8  # 기본값을 더 작게 설정
             if os.name == 'nt':  # Windows
-                batch_size = min(batch_size, 16)  # Windows에서는 최대 16으로 제한
+                batch_size = min(batch_size, 4)  # Windows에서는 4로 제한
             
             print(f"문서 벡터화 시작... (총 {len(documents)}개 문서, 배치 크기: {batch_size})")
             
             for i in tqdm(range(0, len(documents), batch_size), desc="문서 벡터화"):
                 try:
                     batch = documents[i:i+batch_size]
+                    batch_num = i // batch_size + 1
                     
-                    # 메모리 사용량 확인 (Windows에서)
-                    if os.name == 'nt':
-                        import psutil
-                        memory_percent = psutil.virtual_memory().percent
-                        if memory_percent > 80:
-                            print(f"⚠️  메모리 사용량이 높습니다 ({memory_percent:.1f}%). 배치 크기를 줄입니다.")
-                            batch_size = max(1, batch_size // 2)
-                            batch = documents[i:i+batch_size]
+                    print(f"배치 {batch_num} 처리 중... ({len(batch)}개 문서)")
                     
-                    # 임베딩 생성
+                    # 메모리 사용량 확인
+                    memory_percent = psutil.virtual_memory().percent
+                    if memory_percent > 70:
+                        print(f"⚠️  메모리 사용량이 높습니다 ({memory_percent:.1f}%). 배치 크기를 줄입니다.")
+                        batch_size = max(1, batch_size // 2)
+                        batch = documents[i:i+batch_size]
+                    
+                    # GPU 메모리 정리 (사용 가능한 경우)
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                    
+                    # 임베딩 생성 (타임아웃 추가)
+                    print(f"배치 {batch_num} 임베딩 생성 중...")
+                    start_time = time.time()
+                    
+                    # 문서 길이 제한 (너무 긴 문서는 잘라내기)
+                    max_length = 1000
+                    truncated_batch = []
+                    for doc in batch:
+                        if len(doc) > max_length:
+                            truncated_batch.append(doc[:max_length] + "...")
+                        else:
+                            truncated_batch.append(doc)
+                    
                     embeddings = self.embedding_model.encode(
-                        batch, 
+                        truncated_batch, 
                         convert_to_tensor=False,
-                        show_progress_bar=False  # 중복 진행 표시 방지
+                        show_progress_bar=False,
+                        batch_size=min(4, len(truncated_batch))  # 내부 배치 크기도 제한
                     )
                     
+                    elapsed_time = time.time() - start_time
+                    print(f"배치 {batch_num} 임베딩 완료 ({elapsed_time:.2f}초)")
+                    
                     # ChromaDB에 저장
+                    print(f"배치 {batch_num} 데이터베이스 저장 중...")
                     ids = [f"doc_{i+j}" for j in range(len(batch))]
                     self.collection.add(
                         embeddings=embeddings.tolist(),
@@ -552,13 +574,22 @@ class BladderCancerAgent:
                         ids=ids
                     )
                     
+                    print(f"배치 {batch_num} 완료")
+                    
+                    # 배치 간 잠시 대기 (메모리 안정화)
+                    time.sleep(0.1)
+                    
                 except MemoryError as e:
-                    self.logger.error(f"메모리 부족 오류 (배치 {i//batch_size + 1}): {str(e)}")
+                    self.logger.error(f"메모리 부족 오류 (배치 {batch_num}): {str(e)}")
                     print(f"❌ 메모리 부족으로 인해 벡터화에 실패했습니다. 배치 크기를 줄여서 다시 시도해주세요.")
-                    raise
+                    # 배치 크기를 더 줄여서 재시도
+                    batch_size = max(1, batch_size // 2)
+                    if batch_size == 1:
+                        raise
+                    continue
                 except Exception as e:
-                    self.logger.error(f"배치 {i//batch_size + 1} 처리 중 오류: {str(e)}")
-                    print(f"❌ 배치 {i//batch_size + 1} 처리 중 오류가 발생했습니다: {str(e)}")
+                    self.logger.error(f"배치 {batch_num} 처리 중 오류: {str(e)}")
+                    print(f"❌ 배치 {batch_num} 처리 중 오류가 발생했습니다: {str(e)}")
                     # 개별 배치 오류는 건너뛰고 계속 진행
                     continue
                     
