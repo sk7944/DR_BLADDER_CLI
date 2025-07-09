@@ -838,11 +838,55 @@ class BladderCancerAgent:
             if not answer:
                 return "I'm sorry, I cannot generate an answer based on the available information."
             
-            return answer
+            # 답변 포맷팅 (줄바꿈 처리)
+            formatted_answer = self._format_answer(answer)
+            
+            return formatted_answer
             
         except Exception as e:
             self.logger.error(f"답변 생성 실패: {str(e)}")
             return f"An error occurred while generating the answer: {str(e)}"
+    
+    def _format_answer(self, answer: str) -> str:
+        """답변 포맷팅 - 번호 목록 줄바꿈 처리"""
+        try:
+            import re
+            
+            # 먼저 기존 답변에서 불필요한 공백 정리
+            answer = answer.strip()
+            
+            # 패턴 1: "다음과 같습니다:1." -> "다음과 같습니다:\n1."
+            answer = re.sub(r'([:\.])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            
+            # 패턴 2: 한글 문장 끝 + 숫자 -> 줄바꿈 + 숫자
+            answer = re.sub(r'([가-힣])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            
+            # 패턴 3: 영어 문장 끝 + 숫자 -> 줄바꿈 + 숫자
+            answer = re.sub(r'([a-zA-Z])\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            
+            # 패턴 4: 특정 한국어 어미 + 숫자 처리
+            answer = re.sub(r'(습니다|됩니다|입니다|있습니다|합니다)\s*(\d+)\.\s*', r'\1\n\2. ', answer)
+            
+            # 패턴 5: 이미 번호로 시작하는 라인 정리 (번호 뒤에 공백 하나만)
+            answer = re.sub(r'^(\d+)\.\s*([가-힣A-Za-z])', r'\1. \2', answer, flags=re.MULTILINE)
+            
+            # 패턴 6: 줄 중간에 있는 번호 처리
+            answer = re.sub(r'(\d+)\.\s*([가-힣A-Za-z])', r'\1. \2', answer)
+            
+            # 연속된 줄바꿈 정리 (3개 이상 -> 2개)
+            answer = re.sub(r'\n\s*\n\s*\n+', r'\n\n', answer)
+            
+            # 번호 앞의 불필요한 공백 제거
+            answer = re.sub(r'\n\s+(\d+\.)', r'\n\1', answer)
+            
+            # 최종 정리
+            answer = answer.strip()
+            
+            return answer
+            
+        except Exception as e:
+            self.logger.warning(f"답변 포맷팅 중 오류: {e}")
+            return answer
 
     def _create_prompt(self, question: str, context: str) -> str:
         """프롬프트 생성"""
