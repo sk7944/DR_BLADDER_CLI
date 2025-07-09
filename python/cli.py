@@ -243,25 +243,9 @@ class BladderCLI:
             print(f"{Fore.RED}Error checking status: {str(e)}{Style.RESET_ALL}")
 
     def _print_structured_answer(self, answer_text: str):
-        """답변을 구조적으로 출력"""
-        import re
-        
-        # 문장 단위로 분리
-        sentences = re.split(r'(?<=[.!?])\s+', answer_text)
-        
-        # 각 문장을 출력
-        for i, sentence in enumerate(sentences):
-            if sentence.strip():
-                # 리스트 항목 처리
-                if sentence.strip().startswith(('•', '-', '*', '1.', '2.', '3.', '4.', '5.')):
-                    print(f"  {sentence.strip()}")
-                # 일반 문장 처리
-                else:
-                    print(f"{sentence.strip()}")
-                    
-                # 문장 사이에 약간의 공백 추가 (마지막 문장 제외)
-                if i < len(sentences) - 1:
-                    print()
+        """답변을 자연스럽게 출력"""
+        # 단순히 답변을 그대로 출력
+        print(answer_text)
 
     def edit_config(self):
         """설정 파일 편집"""
